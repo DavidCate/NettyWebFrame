@@ -1,6 +1,6 @@
 package com.aimango.robot.server.handler;
 
-import com.aimango.robot.server.RobotSystemLauncher;
+import com.aimango.robot.server.HttpServerLauncher;
 import com.aimango.robot.server.core.annotation.RequestMapping;
 import com.aimango.robot.server.core.container.FullClassContainer;
 import com.alibaba.fastjson.JSON;
@@ -23,7 +23,7 @@ public class HttpHandler implements Callable {
 
     @Override
     public Object call() throws Exception {
-        FullClassContainer fullClassContainer =(FullClassContainer) RobotSystemLauncher.getContainer();
+        FullClassContainer fullClassContainer =(FullClassContainer) HttpServerLauncher.getContainer();
         String uri = fullHttpRequest.uri();
         int indexOf = uri.indexOf("?");
         String uriSub;

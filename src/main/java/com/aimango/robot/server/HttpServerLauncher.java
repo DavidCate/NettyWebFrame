@@ -14,9 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class RobotSystemLauncher {
+public class HttpServerLauncher {
 
-    private static final Logger logger = LoggerFactory.getLogger(RobotSystemLauncher.class);
+    private static final Logger logger = LoggerFactory.getLogger(HttpServerLauncher.class);
     //请求分发工作组
     private EventLoopGroup bossGroup = new NioEventLoopGroup();
     //请求处理工作组
@@ -28,7 +28,7 @@ public class RobotSystemLauncher {
     //容器
     private static Container container;
 
-    private RobotSystemLauncher init() throws Exception {
+    private HttpServerLauncher init() throws Exception {
         logger.info("服务器初始化");
         serverInit();
         containerInit();
@@ -42,7 +42,7 @@ public class RobotSystemLauncher {
         }
         ContainerBuilder containerBuilder=new ContainerBuilder();
         Container container = containerBuilder.build();
-        RobotSystemLauncher.container=container;
+        HttpServerLauncher.container=container;
     }
 
     private void serverInit(){
@@ -65,7 +65,7 @@ public class RobotSystemLauncher {
 
     public void launch(){
         logger.info("服务器启动程序");
-        RobotSystemLauncher launcher = null;
+        HttpServerLauncher launcher = null;
         try {
             launcher=init();
             start(launcher);
@@ -79,7 +79,7 @@ public class RobotSystemLauncher {
         }
     }
 
-    private void start(RobotSystemLauncher launcher) throws InterruptedException {
+    private void start(HttpServerLauncher launcher) throws InterruptedException {
         ChannelFuture channelFuture = launcher.serverBootstrap.bind("0.0.0.0", Integer.valueOf(port)).sync();
         serverRegister();
         channelFuture.channel().closeFuture().sync();
@@ -89,20 +89,20 @@ public class RobotSystemLauncher {
 
     }
 
-    public static RobotSystemLauncher newInstance(){
-        return new RobotSystemLauncher();
+    public static HttpServerLauncher newInstance(){
+        return new HttpServerLauncher();
     }
 
     public static void main(String[] args) {
-        RobotSystemLauncher robotSystemLauncher = RobotSystemLauncher.newInstance();
-        robotSystemLauncher.launch();
+        HttpServerLauncher httpServerLauncher = HttpServerLauncher.newInstance();
+        httpServerLauncher.launch();
     }
 
     class ShutDownBefore implements Runnable {
-        private RobotSystemLauncher robotSystemLauncher;
+        private HttpServerLauncher httpServerLauncher;
         private Exception exception;
-        public ShutDownBefore(RobotSystemLauncher robotSystemLauncher, Exception exception) {
-            this.robotSystemLauncher=robotSystemLauncher;
+        public ShutDownBefore(HttpServerLauncher httpServerLauncher, Exception exception) {
+            this.httpServerLauncher=httpServerLauncher;
             this.exception=exception;
         }
 
