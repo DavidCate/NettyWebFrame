@@ -33,12 +33,27 @@ public class HttpHandler implements Callable {
             uriSub=uri;
         }
         Method method = fullClassContainer.getMethodByUri(uriSub);
-        RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
-        String httpMethod = requestMapping.method();
-        Object executor=fullClassContainer.getExecutorByMethod(method);
-        Object response=HttpMethodInvoke.valueOf(httpMethod.toUpperCase()).invoke(executor,method,fullHttpRequest);
-        sendHttpResponse(response);
+        if (method!=null){
+            RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
+            String httpMethod = requestMapping.method();
+            Object executor=fullClassContainer.getExecutorByMethod(method);
+            Object response=HttpMethodInvoke.valueOf(httpMethod.toUpperCase()).invoke(executor,method,fullHttpRequest);
+            sendHttpResponse(response);
+        }else {
+            send404Response();
+        }
+
+
         return null;
+    }
+
+    private void send404Response() {
+        HttpErrResponse httpErrResponse = new HttpErrResponse("未找到指定资源");
+        String res = JSON.toJSONString(httpErrResponse);
+        FullHttpResponse fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND, Unpooled.wrappedBuffer(res.getBytes()));
+        fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
+
+        channelHandlerContext.writeAndFlush(fullHttpResponse).addListener(ChannelFutureListener.CLOSE);
     }
 
     private void sendHttpResponse(Object response){
