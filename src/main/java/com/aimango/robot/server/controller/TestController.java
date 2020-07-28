@@ -1,9 +1,11 @@
 package com.aimango.robot.server.controller;
 
+import com.aimango.robot.server.HttpServerLauncher;
 import com.aimango.robot.server.core.annotation.Controller;
 import com.aimango.robot.server.core.annotation.Param;
 import com.aimango.robot.server.core.annotation.RequestBody;
 import com.aimango.robot.server.core.annotation.RequestMapping;
+import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.pojo.Pojo;
 import com.alibaba.fastjson.JSON;
 import io.netty.buffer.ByteBuf;
@@ -17,6 +19,8 @@ public class TestController {
     public Object test(FullHttpRequest fullHttpRequest, @Param("xxx")String a,@RequestBody Pojo pojo){
         System.out.println(a);
         System.out.println(JSON.toJSONString(pojo));
-       return null;
+        Container container = HttpServerLauncher.getContainer();
+        container.getClass("");
+        return null;
     }
 }
