@@ -3,6 +3,7 @@ package com.aimango.robot.server;
 import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.core.container.ContainerBuilder;
 import com.aimango.robot.server.initializer.RobotSystemInitializer;
+import com.aimango.robot.server.utils.NacosClient;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.AdaptiveRecvByteBufAllocator;
 import io.netty.channel.ChannelFuture;
@@ -87,7 +88,7 @@ public class HttpServerLauncher {
     }
 
     private void serverRegister(){
-
+        NacosClient.regist();
     }
 
     public static HttpServerLauncher newInstance(){
