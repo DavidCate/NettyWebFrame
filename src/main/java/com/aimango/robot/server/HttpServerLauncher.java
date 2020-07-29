@@ -81,6 +81,7 @@ public class HttpServerLauncher {
 
     private void start(HttpServerLauncher launcher) throws InterruptedException {
         ChannelFuture channelFuture = launcher.serverBootstrap.bind("0.0.0.0", Integer.valueOf(port)).sync();
+        logger.info("服务已启动，监听端口:"+port);
         serverRegister();
         channelFuture.channel().closeFuture().sync();
     }

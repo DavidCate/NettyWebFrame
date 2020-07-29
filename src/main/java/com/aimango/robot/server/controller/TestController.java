@@ -15,7 +15,7 @@ import io.netty.handler.codec.http.HttpHeaders;
 @Controller
 public class TestController {
 
-    @RequestMapping(url = "xxx",method = RequestMapping.Method.POST)
+    @RequestMapping(url = "/xxx",method = RequestMapping.Method.POST)
     public Object test(FullHttpRequest fullHttpRequest, @Param("xxx")String a,@RequestBody Pojo pojo){
         System.out.println(a);
         System.out.println(JSON.toJSONString(pojo));
