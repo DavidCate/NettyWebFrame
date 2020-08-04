@@ -95,15 +95,21 @@ public class FullClassContainer extends ClassContainer implements RestHttpHandle
             url = UriUtils.uri(url);
             String[] strings = url.split("/");
             Map<String,Integer> pathParamIndexMap=new HashMap<>();
+            String uriRegex="";
             for (int i = 0 ; i< strings.length;i++){
-                String subString = strings[0];
+                uriRegex+="/";
+                String subString = strings[i];
                 if (subString.startsWith("{")&&subString.endsWith("}")){
+                    uriRegex+=".*";
                     String paramName = subString.substring(1, subString.length() - 1);
                     pathParamIndexMap.put(paramName,i);
+                }else {
+                    uriRegex+=subString;
                 }
             }
-            this.restUriPathParamIndexInfoMap.put(url,pathParamIndexMap);
-            this.restUriMethodMap.put(url,method);
+
+            this.restUriPathParamIndexInfoMap.put(uriRegex,pathParamIndexMap);
+            this.restUriMethodMap.put(uriRegex,method);
             this.restMethodObjectMap.put(method,clazz.newInstance());
         }
     }
@@ -195,7 +201,14 @@ public class FullClassContainer extends ClassContainer implements RestHttpHandle
 
     @Override
     public Map<String, Integer> getRestUriPathParamIndexInfoMap(String uri) {
-        Map<String, Integer> restUriPathParamIndexInfoMap = this.restUriPathParamIndexInfoMap.get(uri);
-        return restUriPathParamIndexInfoMap;
+        Set<Map.Entry<String, Map<String, Integer>>> entries = restUriPathParamIndexInfoMap.entrySet();
+        for (Map.Entry<String,Map<String,Integer>> entry:entries){
+            String key = entry.getKey();
+            if (Pattern.matches(key,uri)){
+                Map<String, Integer> value = entry.getValue();
+                return value;
+            }
+        }
+        return null;
     }
 }
