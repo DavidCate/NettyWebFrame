@@ -2,7 +2,7 @@ package com.aimango.robot.server;
 
 import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.core.container.ContainerBuilder;
-import com.aimango.robot.server.initializer.RobotSystemInitializer;
+import com.aimango.robot.server.core.initializer.RobotServerInitializer;
 import com.aimango.robot.server.utils.NacosClient;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.AdaptiveRecvByteBufAllocator;
@@ -61,7 +61,7 @@ public class HttpServerLauncher {
         //配置receiveBuf使用混合型
         serverBootstrap.childOption(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator());
         //配置初始化处理器队列
-        serverBootstrap.childHandler(new RobotSystemInitializer());
+        serverBootstrap.childHandler(new RobotServerInitializer());
     }
 
     public void launch(){

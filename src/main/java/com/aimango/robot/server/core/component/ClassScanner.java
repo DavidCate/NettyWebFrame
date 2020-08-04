@@ -1,4 +1,9 @@
-package com.aimango.robot.server.core.scanner;
+package com.aimango.robot.server.core.component;
+
+
+import com.aimango.robot.server.core.annotation.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -14,6 +19,28 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class ClassScanner {
+    private static final Logger logger= LoggerFactory.getLogger(ClassScanner.class);
+    private static final String BASE_PACKATE="com.aimango.robot.server";
+
+    public static Set<Class> scanComponents() throws IOException, ClassNotFoundException {
+        Set<Class> classSet = new HashSet<>();
+
+        Set<Class> scan = scan(BASE_PACKATE);
+
+        for (Class clazz:scan){
+            boolean annotateWith = isAnnotateWith(clazz, Component.class);
+            if (annotateWith){
+                if (!(clazz.isAnnotation() || clazz.isEnum() || clazz.isInterface())) {
+                    classSet.add(clazz);
+                }
+            }
+        }
+        if (classSet.size() <= 0) {
+            return null;
+        }
+        return classSet;
+    }
+
     /**
      * 获取类路径下某个包下的所有类
      * @param packageName
@@ -90,12 +117,5 @@ public class ClassScanner {
             }
         }
         return false;
-    }
-
-    public static void main(String[] args) throws IOException, ClassNotFoundException {
-        Set<Class> scan = ClassScanner.scan("com.aimango.server.component");
-        for (Class clazz:scan){
-            System.out.println(clazz.getName());
-        }
     }
 }

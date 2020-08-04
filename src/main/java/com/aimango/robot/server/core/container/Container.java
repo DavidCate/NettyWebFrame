@@ -7,7 +7,7 @@ public interface Container {
      * @return
      */
     Class getClass(String beanName);
-    Class addClass(String beanName,Class clazz);
+    Class addClass(String beanName, Class clazz);
     boolean hasClass(String beanName);
     boolean hasClass(Class clazz);
 

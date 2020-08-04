@@ -1,4 +1,4 @@
-package com.aimango.robot.server.handler;
+package com.aimango.robot.server.core.component;
 
 public class UriUtils {
     /**

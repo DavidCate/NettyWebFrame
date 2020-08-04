@@ -3,8 +3,9 @@ package com.aimango.robot.server.core.container;
 import com.aimango.robot.server.core.annotation.Autowired;
 import com.aimango.robot.server.core.annotation.Controller;
 import com.aimango.robot.server.core.annotation.RequestMapping;
-import com.aimango.robot.server.handler.UriUtils;
-import org.reflections.Reflections;
+import com.aimango.robot.server.core.annotation.rest.RestController;
+import com.aimango.robot.server.core.annotation.rest.RestRequestMapping;
+import com.aimango.robot.server.core.component.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,8 +14,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
-public class FullClassContainer extends ClassContainer implements HttpHandlerContainer {
+public class FullClassContainer extends ClassContainer implements RestHttpHandlerContainer{
     private static final Logger logger= LoggerFactory.getLogger(FullClassContainer.class);
 
 //    private HttpHandlerContainer httpHandlerContainer;
@@ -29,7 +31,20 @@ public class FullClassContainer extends ClassContainer implements HttpHandlerCon
      */
     private Map<Method,Object> methodObjectMap=new ConcurrentHashMap<>(128);
 
+    /**
+     * 通过rest uri获取对应的method
+     */
+    private Map<String,Method> restUriMethodMap=new ConcurrentHashMap<>(128);
 
+    /**
+     * 通过rest method 获取其对应的实例对象
+     */
+    private Map<Method,Object> restMethodObjectMap=new ConcurrentHashMap<>(128);
+
+    /**
+     * 记录rest uri的路径参数的位置坐标
+     */
+    private Map<String,Map<String,Integer>> restUriPathParamIndexInfoMap=new ConcurrentHashMap(128);
 
     public FullClassContainer(Set<Class> classes) throws IllegalAccessException, InstantiationException {
         super(classes);
@@ -56,9 +71,40 @@ public class FullClassContainer extends ClassContainer implements HttpHandlerCon
         Annotation[] declaredAnnotations = clazz.getDeclaredAnnotations();
         List<Annotation> classAnnotations = Arrays.asList(declaredAnnotations);
         for (Annotation annotation:classAnnotations){
-            if (annotation.annotationType()==Controller.class){
+            if (annotation.annotationType()== Controller.class){
                 initHttpHandlerContainer(clazz);
             }
+            if (annotation.annotationType()== RestController.class){
+                initRestHttpHandlerContainer(clazz);
+            }
+        }
+    }
+
+    private void initRestHttpHandlerContainer(Class clazz) throws InstantiationException, IllegalAccessException {
+        Method[] declaredMethods = clazz.getDeclaredMethods();
+        for (Method method:declaredMethods){
+            restMethodHandler(method,clazz);
+        }
+    }
+
+    private void restMethodHandler(Method method, Class clazz) throws IllegalAccessException, InstantiationException {
+        boolean annotationPresent = method.isAnnotationPresent(RestRequestMapping.class);
+        if (annotationPresent){
+            RestRequestMapping annotation = method.getAnnotation(RestRequestMapping.class);
+            String url = annotation.url();
+            url = UriUtils.uri(url);
+            String[] strings = url.split("/");
+            Map<String,Integer> pathParamIndexMap=new HashMap<>();
+            for (int i = 0 ; i< strings.length;i++){
+                String subString = strings[0];
+                if (subString.startsWith("{")&&subString.endsWith("}")){
+                    String paramName = subString.substring(1, subString.length() - 1);
+                    pathParamIndexMap.put(paramName,i);
+                }
+            }
+            this.restUriPathParamIndexInfoMap.put(url,pathParamIndexMap);
+            this.restUriMethodMap.put(url,method);
+            this.restMethodObjectMap.put(method,clazz.newInstance());
         }
     }
 
@@ -123,5 +169,33 @@ public class FullClassContainer extends ClassContainer implements HttpHandlerCon
     public Object getExecutorByMethod(Method method) {
         Object target = methodObjectMap.get(method);
         return target;
+    }
+
+    @Override
+    public Method getRestMethodByUri(String uri) {
+        Set<Map.Entry<String, Method>> entries = restUriMethodMap.entrySet();
+        Iterator<Map.Entry<String, Method>> iterator = entries.iterator();
+        while (iterator.hasNext()){
+            Map.Entry<String, Method> next = iterator.next();
+            String key = next.getKey();
+            boolean matches = Pattern.matches(key, uri);
+            if (matches){
+                Method value = next.getValue();
+                return value;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Object getRestExecutorByMethod(Method restMethod) {
+        Object o = restMethodObjectMap.get(restMethod);
+        return o;
+    }
+
+    @Override
+    public Map<String, Integer> getRestUriPathParamIndexInfoMap(String uri) {
+        Map<String, Integer> restUriPathParamIndexInfoMap = this.restUriPathParamIndexInfoMap.get(uri);
+        return restUriPathParamIndexInfoMap;
     }
 }

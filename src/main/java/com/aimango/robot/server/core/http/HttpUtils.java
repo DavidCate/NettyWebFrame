@@ -1,4 +1,4 @@
-package com.aimango.robot.server.handler;
+package com.aimango.robot.server.core.http;
 
 import io.netty.handler.codec.http.HttpMethod;
 

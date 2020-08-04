@@ -1,4 +1,4 @@
-package com.aimango.robot.server.handler;
+package com.aimango.robot.server.core.http;
 
 public class HttpErrResponse {
     private String msg;
