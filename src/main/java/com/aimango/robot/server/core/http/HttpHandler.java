@@ -1,6 +1,7 @@
 package com.aimango.robot.server.core.http;
 
 
+
 import com.aimango.robot.server.HttpServerLauncher;
 import com.aimango.robot.server.core.annotation.RequestMapping;
 import com.aimango.robot.server.core.annotation.rest.RestRequestMapping;
@@ -57,7 +58,7 @@ public class HttpHandler implements Callable {
             String httpMethod = restRequestMapping.method();
             Object executor=fullClassContainer.getRestExecutorByMethod(restMethod);
             try {
-                Object response = HttpMethodInvoke.valueOf(httpMethod.toUpperCase()).invoke(uriSub,executor, method, fullHttpRequest, true);
+                Object response = HttpMethodInvoke.valueOf(httpMethod.toUpperCase()).invoke(uriSub,executor, restMethod, fullHttpRequest, true);
                 sendHttpResponse(response);
             }catch (IllegalArgumentException e) {
                 logger.warn("不合法的请求参数", e);

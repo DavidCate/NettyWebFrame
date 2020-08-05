@@ -1,6 +1,5 @@
 package com.aimango.robot.server.core.component;
 
-
 import com.aimango.robot.server.core.annotation.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

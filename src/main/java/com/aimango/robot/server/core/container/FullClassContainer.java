@@ -61,6 +61,7 @@ public class FullClassContainer extends ClassContainer implements RestHttpHandle
                 analyzeClassByAnnotation(next);
             }
         }
+        logger.info("容器构建完毕");
     }
 
     /**
@@ -95,9 +96,8 @@ public class FullClassContainer extends ClassContainer implements RestHttpHandle
             url = UriUtils.uri(url);
             String[] strings = url.split("/");
             Map<String,Integer> pathParamIndexMap=new HashMap<>();
-            String uriRegex="";
+            String uriRegex="/";
             for (int i = 0 ; i< strings.length;i++){
-                uriRegex+="/";
                 String subString = strings[i];
                 if (subString.startsWith("{")&&subString.endsWith("}")){
                     uriRegex+=".*";
@@ -106,8 +106,11 @@ public class FullClassContainer extends ClassContainer implements RestHttpHandle
                 }else {
                     uriRegex+=subString;
                 }
+                if (!uriRegex.endsWith("/")){
+                    uriRegex+="/";
+                }
             }
-
+            uriRegex=uriRegex.substring(0,uriRegex.length()-1);
             this.restUriPathParamIndexInfoMap.put(uriRegex,pathParamIndexMap);
             this.restUriMethodMap.put(uriRegex,method);
             this.restMethodObjectMap.put(method,clazz.newInstance());
