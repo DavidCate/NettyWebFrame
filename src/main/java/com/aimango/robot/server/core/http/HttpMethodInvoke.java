@@ -1,14 +1,18 @@
 package com.aimango.robot.server.core.http;
 
 import com.aimango.robot.server.HttpServerLauncher;
+import com.aimango.robot.server.core.annotation.MapperParam;
 import com.aimango.robot.server.core.annotation.Param;
 import com.aimango.robot.server.core.annotation.RequestBody;
 import com.aimango.robot.server.core.annotation.rest.PathParam;
 import com.aimango.robot.server.core.container.FullClassContainer;
+import com.aimango.robot.server.core.mybatis.Mybatis;
 import com.alibaba.fastjson.JSON;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -20,13 +24,17 @@ import java.util.Map;
  * @author DavidLiu
  */
 
+/**
+ * @author DavidLiu
+ */
+
 public enum HttpMethodInvoke implements Invoker {
     /**
      * GET请求校验
      */
     GET {
         @Override
-        public Object invoke(String uri,Object executor, Method method, FullHttpRequest fullHttpRequest, boolean isRestful) throws Exception {
+        public Object invoke(String uri, Object executor, Method method, FullHttpRequest fullHttpRequest, boolean isRestful) throws Exception {
             HttpMethod httpMethod = fullHttpRequest.method();
             boolean pass = HttpUtils.isMethodPass(HttpMethod.GET, httpMethod.name());
             if (pass) {
@@ -68,6 +76,8 @@ public enum HttpMethodInvoke implements Invoker {
     private static Object restInnerInvoke(String uri, Object executor, Method method, FullHttpRequest fullHttpRequest) throws Exception{
         Parameter[] parameters = method.getParameters();
         Object[] realParamValues=new Object[parameters.length];
+
+        SqlSession sqlSession=null;
         for (int i = 0 ; i<parameters.length;i++){
             Parameter parameter = parameters[i];
             boolean requestBody = parameter.isAnnotationPresent(RequestBody.class);
@@ -130,6 +140,14 @@ public enum HttpMethodInvoke implements Invoker {
                     throw new Exception("框架rest接口处理解析异常，无法获取uri路径参数坐标，容器中rest api数据解析有问题，数据不一致");
                 }
             }
+            boolean parameterAnnotationPresent = parameter.isAnnotationPresent(MapperParam.class);
+
+            if (parameterAnnotationPresent){
+                SqlSessionFactory sqlSessionFactory = Mybatis.getSqlSessionFactory();
+                sqlSession = sqlSessionFactory.openSession(false);
+                Object mapper = sqlSession.getMapper(parameter.getType());
+                realParamValues[i]=mapper;
+            }
             Class type = parameter.getType();
             if (type.isAssignableFrom(FullHttpRequest.class)) {
                 realParamValues[i] = fullHttpRequest;
@@ -140,14 +158,22 @@ public enum HttpMethodInvoke implements Invoker {
                 realParamValues[i]=fullHttpResponse;
             }
         }
-        Object response = method.invoke(executor, realParamValues);
-        return response;
+        try {
+            Object response = method.invoke(executor, realParamValues);
+            return response;
+        }finally {
+            if (sqlSession!=null){
+                sqlSession.commit();
+                sqlSession.close();
+            }
+        }
     }
 
 
     private static Object innerInvoke(Object executor, Method method, FullHttpRequest fullHttpRequest) throws Exception {
         Parameter[] parameters = method.getParameters();
         Object[] realParams = new Object[parameters.length];
+        SqlSession sqlSession=null;
         for (int i = 0; i < parameters.length; i++) {
             Parameter parameter = parameters[i];
             boolean requestBody = parameter.isAnnotationPresent(RequestBody.class);
@@ -185,6 +211,14 @@ public enum HttpMethodInvoke implements Invoker {
                     }
                 }
             }
+            boolean parameterAnnotationPresent = parameter.isAnnotationPresent(MapperParam.class);
+
+            if (parameterAnnotationPresent){
+                SqlSessionFactory sqlSessionFactory = Mybatis.getSqlSessionFactory();
+                sqlSession = sqlSessionFactory.openSession(false);
+                Object mapper = sqlSession.getMapper(parameter.getType());
+                realParams[i]=mapper;
+            }
             Class type = parameter.getType();
             if (type.isAssignableFrom(FullHttpRequest.class)) {
                 realParams[i] = fullHttpRequest;
@@ -195,8 +229,14 @@ public enum HttpMethodInvoke implements Invoker {
                 realParams[i]=fullHttpResponse;
             }
         }
-
-        Object response = method.invoke(executor, realParams);
-        return response;
+        try {
+            Object response = method.invoke(executor, realParams);
+            return response;
+        }finally {
+            if (sqlSession!=null){
+                sqlSession.commit();
+                sqlSession.close();
+            }
+        }
     }
 }

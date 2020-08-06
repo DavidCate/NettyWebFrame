@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <settings>
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+                <setting name="logImpl" value="org.apache.ibatis.logging.stdout.StdOutImpl"/>
+        <!--        <setting name="logImpl" value="org.apache.ibatis.logging.slf4j.Slf4jImpl"/>-->
+        <!--        <setting name="logImpl" value="com.aimango.chat_server.netty.component.MybatisLog"/>-->
+
+<!--        <setting name="logPrefix" value="mybatis.sql."/>-->
+        <setting name="cacheEnabled" value="false"/>
+    </settings>
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="com.aimango.robot.server.core.mybatis.druid.DruidDataSourceFactory">
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+        <mapper resource="mybatis/mapper/TestMapper.xml"/>
+    </mappers>
+</configuration>
