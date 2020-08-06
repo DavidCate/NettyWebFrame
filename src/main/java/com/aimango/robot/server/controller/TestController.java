@@ -19,7 +19,8 @@ public class TestController {
         System.out.println(JSON.toJSONString(pojo));
         Container container = HttpServerLauncher.getContainer();
         container.getClass("");
-        System.out.println(testMapper.select1());
+        Integer integer = testMapper.select1();
+        System.out.println(integer);
         return null;
     }
 }
