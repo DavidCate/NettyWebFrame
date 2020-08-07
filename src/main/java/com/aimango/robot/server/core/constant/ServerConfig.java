@@ -10,6 +10,7 @@ public class ServerConfig {
     public class Config{
         public static final String CONFIG_MODE_LOCAL="local";
         public static final String CONFIG_MODE_NACOS="nacos";
+        public static final String CONFIG_MODE = "server.config.mode";
     }
 
     public class Nacos {
@@ -30,6 +31,17 @@ public class ServerConfig {
     }
 
     public class Druid{
-        public static final String URL="";
+        public static final String URL="druid.url";
+        public static final String USERNAME="druid.username";
+        public static final String PASSWORD="druid.password";
+        public static final String CONNECTION_INIT_SQLS="druid.connection-init-sqls";
+        public static final String INITIALSIZE="druid.initialSize";
+        public static final String MINIDLE="druid.minIdle";
+        public static final String MAXACTIVE="druid.maxActive";
+        public static final String MAXWAIT="druid.maxWait";
+    }
+
+    public class Mybatis{
+        public static final String CONFIG_FILE_LOCATION="mybatis.config.location";
     }
 }

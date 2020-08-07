@@ -8,6 +8,7 @@ import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.core.container.ContainerBuilder;
 import com.aimango.robot.server.core.initializer.RobotServerInitializer;
 import com.aimango.robot.server.utils.NacosClient;
+import com.alibaba.nacos.api.exception.NacosException;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.AdaptiveRecvByteBufAllocator;
 import io.netty.channel.ChannelFuture;
@@ -15,6 +16,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,48 +27,69 @@ public class HttpServerLauncher {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerLauncher.class);
 
+    private Class mainClass;
+
+    private String[] args;
+
     private EventLoopGroup bossGroup = new NioEventLoopGroup();
 
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
 
     private ServerBootstrap serverBootstrap = new ServerBootstrap();
 
-    int port=8080;
+    int port = 8080;
 
     private static Container container;
 
     private String basePackage;
 
-    private String configMode= ServerConfig.Config.CONFIG_MODE_LOCAL;
+    private String configMode = ServerConfig.Config.CONFIG_MODE_LOCAL;
+
+    public HttpServerLauncher(Class clazz, String[] args) {
+        this.mainClass = clazz;
+        this.args = args;
+    }
 
     public static void run(Class clazz, String[] args) {
-        String className = clazz.getName();
-        int index = className.lastIndexOf('.');
-        String packageName=className.substring(0,index);
-        HttpServerLauncher httpServerLauncher=new HttpServerLauncher();
-        httpServerLauncher.basePackage=packageName;
+
+        HttpServerLauncher httpServerLauncher = new HttpServerLauncher(clazz, args);
+
         httpServerLauncher.launch();
     }
 
     private HttpServerLauncher init() throws Exception {
         logger.info("服务器初始化");
+        configInit();
         serverInit();
         containerInit();
         return this;
     }
 
-    private void containerInit() throws Exception {
-        logger.info("初始化容器");
-        if (container!=null){
-            throw new Exception("容器已经存在！");
+    private void configInit() {
+        logger.info("配置初始化");
+        String className = mainClass.getName();
+        int index = className.lastIndexOf('.');
+        String packageName = className.substring(0, index);
+        this.basePackage = packageName;
+        String configMode = PropertiesUtils.getProperty(ServerConfig.Config.CONFIG_MODE);
+        if (StringUtils.isNotEmpty(configMode)) {
+            this.configMode = configMode;
         }
-        ContainerBuilder containerBuilder=new ContainerBuilder(basePackage);
-        Container container = containerBuilder.build();
-        HttpServerLauncher.container=container;
+        logger.info("配置加载方式："+this.configMode);
     }
 
-    private void serverInit(){
-        logger.info("服务器配置初始化");
+    private void containerInit() throws Exception {
+        logger.info("初始化容器");
+        if (container != null) {
+            throw new Exception("容器已经存在！");
+        }
+        ContainerBuilder containerBuilder = new ContainerBuilder(basePackage);
+        Container container = containerBuilder.build();
+        HttpServerLauncher.container = container;
+    }
+
+    private void serverInit() {
+        logger.info("服务器网络配置初始化");
         //配置工作线程组
         serverBootstrap.group(bossGroup, workerGroup);
         //配置通道类型
@@ -83,58 +106,64 @@ public class HttpServerLauncher {
         serverBootstrap.childHandler(new RobotServerInitializer());
     }
 
-    public void launch(){
+    public void launch() {
         logger.info("服务器启动程序");
         HttpServerLauncher launcher = null;
         try {
-            launcher=init();
+            launcher = init();
             start(launcher);
-        }catch (Exception e) {
-            Runtime.getRuntime().addShutdownHook(new Thread(new ShutDownBefore(launcher,e)));
+        } catch (Exception e) {
+            Runtime.getRuntime().addShutdownHook(new Thread(new ShutDownBefore(launcher, e)));
         } finally {
-            if (launcher!=null){
+            if (launcher != null) {
                 launcher.workerGroup.shutdownGracefully();
                 launcher.bossGroup.shutdownGracefully();
             }
         }
     }
 
-    private void start(HttpServerLauncher launcher) throws InterruptedException, IOException {
-        if (configMode.equals(ServerConfig.Config.CONFIG_MODE_NACOS)){
-            this.port =Integer.parseInt(Nacos.getPropertiesField(ServerConfig.SERVER_PORT)) ;
-        }else {
-            this.port =Integer.parseInt(PropertiesUtils.getProperty("server.port")) ;
+    private void start(HttpServerLauncher launcher) throws InterruptedException, IOException, NacosException {
+        if (configMode.equals(ServerConfig.Config.CONFIG_MODE_NACOS)) {
+            this.port = Integer.parseInt(Nacos.getPropertiesField(ServerConfig.SERVER_PORT));
+        } else if (configMode.equals(ServerConfig.Config.CONFIG_MODE_LOCAL)) {
+            this.port = Integer.parseInt(PropertiesUtils.getProperty(ServerConfig.SERVER_PORT));
         }
-        ChannelFuture channelFuture = launcher.serverBootstrap.bind("0.0.0.0",this.port).sync();
-        logger.info("服务已启动，监听端口:"+ this.port);
+        ChannelFuture channelFuture = launcher.serverBootstrap.bind("0.0.0.0", this.port).sync();
+        logger.info("服务已启动，监听端口:" + this.port);
         serverRegister();
         channelFuture.channel().closeFuture().sync();
     }
 
-    private void serverRegister(){
-        NacosClient.regist();
+    private void serverRegister() throws IOException, NacosException {
+        if (configMode.equals(ServerConfig.Config.CONFIG_MODE_NACOS)) {
+            String serviceName = Nacos.getPropertiesField(ServerConfig.SERVER_NAME);
+            String ip = Nacos.getLocalIp(PropertiesUtils.getProperty(ServerConfig.NETWORK_CARD));
+            int port = Integer.parseInt(Nacos.getPropertiesField(ServerConfig.SERVER_PORT));
+            String clusterName = Nacos.getPropertiesField(ServerConfig.Nacos.DISCOVERY.CLUSTER_NAME);
+            String serverAddr = Nacos.getPropertiesField(ServerConfig.Nacos.SERVER_ADDR);
+            String namespace = Nacos.getPropertiesField(ServerConfig.Nacos.NAMESPACE);
+            Nacos.ServiceDiscovery.registerInstance(serviceName, ip, port, clusterName, serverAddr, namespace);
+        }
     }
 
-    public static HttpServerLauncher newInstance(){
-        return new HttpServerLauncher();
-    }
 
     class ShutDownBefore implements Runnable {
         private HttpServerLauncher httpServerLauncher;
         private Exception exception;
+
         public ShutDownBefore(HttpServerLauncher httpServerLauncher, Exception exception) {
-            this.httpServerLauncher=httpServerLauncher;
-            this.exception=exception;
+            this.httpServerLauncher = httpServerLauncher;
+            this.exception = exception;
         }
 
         @Override
         public void run() {
-            logger.error("服务异常关闭",exception);
+            logger.error("服务异常关闭", exception);
         }
     }
 
     public static Container getContainer() {
-        if (container==null){
+        if (container == null) {
             throw new NullPointerException("容器未初始化");
         }
         return container;

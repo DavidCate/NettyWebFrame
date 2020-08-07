@@ -25,11 +25,4 @@ public class ContainerBuilder implements Builder<Container>{
         FullClassContainer fullClassContainer=new FullClassContainer(classes);
         return fullClassContainer;
     }
-
-    private void classDispacher(Class clazz){
-        boolean annotationPresent = clazz.isAnnotationPresent(Controller.class);
-        if (annotationPresent){
-
-        }
-    }
 }

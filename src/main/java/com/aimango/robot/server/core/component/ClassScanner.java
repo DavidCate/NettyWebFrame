@@ -36,6 +36,7 @@ public class ClassScanner {
         if (classSet.size() <= 0) {
             return null;
         }
+        logger.info("组件筛选完毕共有:"+classSet.size()+"个");
         return classSet;
     }
 
@@ -48,13 +49,13 @@ public class ClassScanner {
      * @throws ClassNotFoundException
      */
     public static Set<Class> scan(String packageName) throws IOException, ClassNotFoundException {
+        logger.info("开始进行类扫描，扫描包："+packageName);
         Set<Class> classes = new HashSet<>();
         String packagePath = packageName.replace(".", "/");
         Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources("");
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
             URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{url}, Thread.currentThread().getContextClassLoader());
-            logger.info("开始进行类扫描");
             logger.info(url.toString());
             String protocol = url.getProtocol();
             logger.info("协议：" + protocol);
@@ -78,6 +79,7 @@ public class ClassScanner {
                 addClasses(targetPath, classes, packageName);
             }
         }
+        logger.info("扫描完毕，包："+packageName+"下一共有:"+classes.size()+"个类");
         return classes;
     }
 
