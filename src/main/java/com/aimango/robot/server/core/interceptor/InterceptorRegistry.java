@@ -11,4 +11,8 @@ public class InterceptorRegistry {
         this.registrations.add(interceptorRegistration);
         return interceptorRegistration;
     }
+
+    public List<InterceptorRegistration> getRegistrations(){
+        return registrations;
+    }
 }

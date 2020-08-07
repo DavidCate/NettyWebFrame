@@ -6,12 +6,16 @@ import com.aimango.robot.server.core.annotation.RequestMapping;
 import com.aimango.robot.server.core.annotation.rest.RestController;
 import com.aimango.robot.server.core.annotation.rest.RestRequestMapping;
 import com.aimango.robot.server.core.component.UriUtils;
+import com.aimango.robot.server.core.interceptor.InterceptorRegistration;
+import com.aimango.robot.server.core.interceptor.InterceptorRegistry;
+import com.aimango.robot.server.core.interceptor.WebConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -46,6 +50,13 @@ public class FullClassContainer extends ClassContainer implements RestHttpHandle
      */
     private Map<String,Map<String,Integer>> restUriPathParamIndexInfoMap=new ConcurrentHashMap(128);
 
+    /**
+     * web配置，拦截器
+     */
+    private List<InterceptorRegistration> interceptorRegistrations;
+
+    private boolean interceptor=false;
+
     public FullClassContainer(Set<Class> classes) throws IllegalAccessException, InstantiationException {
         super(classes);
         init();
@@ -69,6 +80,21 @@ public class FullClassContainer extends ClassContainer implements RestHttpHandle
      * @param clazz
      */
     private void analyzeClassByAnnotation(Class clazz) throws IllegalAccessException, InstantiationException {
+        boolean isWebConfiguration=false;
+        Class[] interfaces = clazz.getInterfaces();
+
+        for (Type type:interfaces){
+            String typeName = type.getTypeName();
+            String name = WebConfiguration.class.getName();
+            if (typeName.equals(name)){
+                isWebConfiguration=true;
+                break;
+            }
+        }
+
+        if (isWebConfiguration){
+            initInterceptors(clazz);
+        }
         Annotation[] declaredAnnotations = clazz.getDeclaredAnnotations();
         List<Annotation> classAnnotations = Arrays.asList(declaredAnnotations);
         for (Annotation annotation:classAnnotations){
@@ -78,6 +104,30 @@ public class FullClassContainer extends ClassContainer implements RestHttpHandle
             if (annotation.annotationType()== RestController.class){
                 initRestHttpHandlerContainer(clazz);
             }
+        }
+    }
+
+    private void initInterceptors(Class<WebConfiguration> clazz) throws IllegalAccessException, InstantiationException {
+        InterceptorRegistry interceptorRegistry=new InterceptorRegistry();
+        WebConfiguration webConfigurationInstance = clazz.newInstance();
+        webConfigurationInstance.addInterceptors(interceptorRegistry);
+        List<InterceptorRegistration> registrations = interceptorRegistry.getRegistrations();
+        if (registrations.size()>0){
+            registrations.get(0);
+            InterceptorRegistration[] interceptorRegistrations = registrations.toArray(new InterceptorRegistration[registrations.size()]);
+            Arrays.sort(interceptorRegistrations, (o1,o2)-> {
+                    Integer order = o1.getOrder();
+                    Integer order1 = o2.getOrder();
+                    if (order>order1){
+                        return 1;
+                    }else
+                    if (order<order1){
+                        return -1;
+                    }else {
+                        return 0;
+                    }
+                });
+            this.interceptorRegistrations = Arrays.asList(interceptorRegistrations);
         }
     }
 
@@ -213,5 +263,13 @@ public class FullClassContainer extends ClassContainer implements RestHttpHandle
             }
         }
         return null;
+    }
+
+    public List<InterceptorRegistration> getInterceptorRegistrations() {
+        return interceptorRegistrations;
+    }
+
+    public boolean isInterceptor() {
+        return interceptor;
     }
 }

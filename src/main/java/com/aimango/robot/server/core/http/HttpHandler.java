@@ -6,6 +6,9 @@ import com.aimango.robot.server.HttpServerLauncher;
 import com.aimango.robot.server.core.annotation.RequestMapping;
 import com.aimango.robot.server.core.annotation.rest.RestRequestMapping;
 import com.aimango.robot.server.core.container.FullClassContainer;
+import com.aimango.robot.server.core.interceptor.InterceptorRegistration;
+import com.aimango.robot.server.core.interceptor.InterceptorRegistry;
+import com.aimango.robot.server.core.interceptor.WebConfiguration;
 import com.alibaba.fastjson.JSON;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -15,6 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 public class HttpHandler implements Callable {
@@ -38,6 +43,7 @@ public class HttpHandler implements Callable {
         } else {
             uriSub = uri;
         }
+
         Method method = fullClassContainer.getMethodByUri(uriSub);
         if (method != null) {
             RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
