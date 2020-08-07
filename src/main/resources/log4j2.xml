@@ -10,8 +10,8 @@
 
         <!--处理DEBUG级别的日志，并把该日志放到logs/debug.log文件中-->
         <!--打印出DEBUG级别日志，每次大小超过size，则这size大小的日志会自动存入按年份-月份建立的文件夹下面并进行压缩，作为存档-->
-        <RollingFile name="RollingFileDebug" fileName="./logs/robotSystem/debug.log"
-                     filePattern="logs/robotSystem/$${date:yyyy-MM}/debug-%d{yyyy-MM-dd}-%i.log.gz">
+        <RollingFile name="RollingFileDebug" fileName="./logs/NettyWebFrame/debug.log"
+                     filePattern="logs/NettyWebFrame/$${date:yyyy-MM}/debug-%d{yyyy-MM-dd}-%i.log.gz">
             <Filters>
                 <ThresholdFilter level="DEBUG"/>
                 <ThresholdFilter level="INFO" onMatch="DENY" onMismatch="NEUTRAL"/>
@@ -25,8 +25,8 @@
         </RollingFile>
 
         <!--处理INFO级别的日志，并把该日志放到logs/info.log文件中-->
-        <RollingFile name="RollingFileInfo" fileName="./logs/robotSystem/info.log"
-                     filePattern="logs/robotSystem/$${date:yyyy-MM}/info-%d{yyyy-MM-dd}-%i.log.gz">
+        <RollingFile name="RollingFileInfo" fileName="./logs/NettyWebFrame/info.log"
+                     filePattern="logs/NettyWebFrame/$${date:yyyy-MM}/info-%d{yyyy-MM-dd}-%i.log.gz">
             <Filters>
                 <!--只接受INFO级别的日志，其余的全部拒绝处理-->
                 <ThresholdFilter level="INFO"/>
@@ -42,7 +42,7 @@
 
         <!--处理WARN级别的日志，并把该日志放到logs/warn.log文件中-->
         <RollingFile name="RollingFileWarn" fileName="./logs/robotSystem/warn.log"
-                     filePattern="logs/robotSystem/$${date:yyyy-MM}/warn-%d{yyyy-MM-dd}-%i.log.gz">
+                     filePattern="logs/NettyWebFrame/$${date:yyyy-MM}/warn-%d{yyyy-MM-dd}-%i.log.gz">
             <Filters>
                 <ThresholdFilter level="WARN"/>
                 <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="NEUTRAL"/>
@@ -57,7 +57,7 @@
 
         <!--处理error级别的日志，并把该日志放到logs/error.log文件中-->
         <RollingFile name="RollingFileError" fileName="./logs/robotSystem/error.log"
-                     filePattern="logs/robotSystem/$${date:yyyy-MM}/error-%d{yyyy-MM-dd}-%i.log.gz">
+                     filePattern="logs/NettyWebFrame/$${date:yyyy-MM}/error-%d{yyyy-MM-dd}-%i.log.gz">
             <ThresholdFilter level="ERROR"/>
             <PatternLayout
                     pattern="[%d{yyyy-MM-dd HH:mm:ss}] %t %-5level %class{36} %L %M - %msg%xEx%n"/>
@@ -69,7 +69,7 @@
 
         <!--druid的日志记录追加器-->
         <RollingFile name="druidSqlRollingFile" fileName="./logs/robotSystem/druid-sql.log"
-                     filePattern="logs/robotSystem/$${date:yyyy-MM}/api-%d{yyyy-MM-dd}-%i.log.gz">
+                     filePattern="logs/NettyWebFrame/$${date:yyyy-MM}/api-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss}] %-5level %L %M - %msg%xEx%n"/>
             <Policies>
                 <SizeBasedTriggeringPolicy size="500 MB"/>
