@@ -1,5 +1,6 @@
 package com.aimango.robot.server.core.mybatis;
 
+import com.aimango.robot.server.core.component.PropertiesUtils;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -12,7 +13,7 @@ import java.io.InputStream;
 
 public class Mybatis {
     private static final Logger logger= LoggerFactory.getLogger(Mybatis.class);
-    private final static String RESOURCE= "mybatis/mybatis-config.xml";
+    private final static String RESOURCE= PropertiesUtils.getProperty("mybatis.config.file");
     private volatile static SqlSessionFactory sqlSessionFactory;
     private Mybatis(){}
 

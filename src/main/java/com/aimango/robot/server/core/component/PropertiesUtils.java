@@ -19,7 +19,7 @@ public class PropertiesUtils {
     public PropertiesUtils() {}
 
     static {
-        String configPath = "config.properties";
+        String configPath = "bootstrap.properties";
         if (properties == null){
             synchronized (PropertiesUtils.class){
                 if (properties == null){
@@ -28,13 +28,11 @@ public class PropertiesUtils {
                         InputStreamReader isr = new InputStreamReader(PropertiesUtils.class.getClassLoader().getResourceAsStream(configPath),"utf-8");
                         properties.load(isr);
                     } catch (NullPointerException e) {
-                        logger.warn("默认配置文件config.properties不存在.");
+                        logger.warn("默认配置文件bootstrap.properties不存在.");
                     } catch (UnsupportedEncodingException e) {
                         logger.error(MessageFormat.format("config.properties file load fail, err: {0}", e));
-                       logger.error("context",e);
                     } catch (IOException e) {
                         logger.error(MessageFormat.format("config.properties file load fail, err: {0}", e));
-                       logger.error("context",e);
                     }
                 }
             }
