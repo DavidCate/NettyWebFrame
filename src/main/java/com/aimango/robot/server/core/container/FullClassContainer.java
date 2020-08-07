@@ -94,6 +94,7 @@ public class FullClassContainer extends ClassContainer implements RestHttpHandle
 
         if (isWebConfiguration){
             initInterceptors(clazz);
+            this.interceptor=true;
         }
         Annotation[] declaredAnnotations = clazz.getDeclaredAnnotations();
         List<Annotation> classAnnotations = Arrays.asList(declaredAnnotations);

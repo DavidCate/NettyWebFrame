@@ -8,8 +8,8 @@ import java.lang.reflect.Method;
 
 public class GlobalInterceptor implements Interceptor {
     @Override
-    public void postHandler(FullHttpRequest fullHttpRequest, FullHttpResponse fullHttpResponse, Method handlerMethod) {
-
+    public boolean postHandler(FullHttpRequest fullHttpRequest, FullHttpResponse fullHttpResponse, Method handlerMethod) {
+        return true;
     }
 
     @Override
