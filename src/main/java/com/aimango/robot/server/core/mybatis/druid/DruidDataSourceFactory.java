@@ -42,23 +42,22 @@ public class DruidDataSourceFactory implements DataSourceFactory {
         filters.add(statFilter);
         dataSource.setProxyFilters(filters);
         dataSource.setTimeBetweenLogStatsMillis(300000);
-        Properties propertiesByFile = PropertiesUtils.getPropertiesByFile("bootstrap.properties");
-        String url = propertiesByFile.getProperty("db.url");
+        String url = PropertiesUtils.getProperty("db.url");
         logger.info("DB连接url:" + url);
-        String userName =   propertiesByFile.getProperty("db.username");
-        String password = propertiesByFile.getProperty("db.password");
-        String connectionInitSqls = propertiesByFile.getProperty("db.connection-init-sqls");
+        String userName =   PropertiesUtils.getProperty("db.username");
+        String password = PropertiesUtils.getProperty("db.password");
+        String connectionInitSqls = PropertiesUtils.getProperty("db.connection-init-sqls");
         dataSource.setUrl(url);
         dataSource.setUsername(userName);
         dataSource.setPassword(password);
         logger.info("配置连接池大小，超时等待");
-        Integer initialSize =Integer.parseInt(propertiesByFile.getProperty("db.initialSize"));
+        Integer initialSize =Integer.parseInt(PropertiesUtils.getProperty("db.initialSize"));
         dataSource.setInitialSize(initialSize);
-        Integer minIdle =Integer.parseInt(propertiesByFile.getProperty("db.minIdle"));
+        Integer minIdle =Integer.parseInt(PropertiesUtils.getProperty("db.minIdle"));
         dataSource.setMinIdle(minIdle);
-        Integer maxActive =Integer.parseInt(propertiesByFile.getProperty("db.maxActive"));
+        Integer maxActive =Integer.parseInt(PropertiesUtils.getProperty("db.maxActive"));
         dataSource.setMaxActive(maxActive);
-        Integer maxWait =Integer.parseInt(propertiesByFile.getProperty("db.maxWait"));
+        Integer maxWait =Integer.parseInt(PropertiesUtils.getProperty("db.maxWait"));
         dataSource.setMaxWait(maxWait);
         /** 配置间隔多久启动一次DestroyThread，对连接池内的连接才进行一次检测，单位是毫秒。
          检测时:

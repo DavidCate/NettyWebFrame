@@ -1,6 +1,7 @@
 package com.aimango.robot.server.core.launcher;
 
 import com.aimango.robot.server.MyServer;
+import com.aimango.robot.server.core.component.PropertiesUtils;
 import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.core.container.ContainerBuilder;
 import com.aimango.robot.server.core.initializer.RobotServerInitializer;
@@ -12,8 +13,11 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Properties;
 
 
 public class HttpServerLauncher {
@@ -93,8 +97,12 @@ public class HttpServerLauncher {
     }
 
     private void start(HttpServerLauncher launcher) throws InterruptedException {
-        ChannelFuture channelFuture = launcher.serverBootstrap.bind("0.0.0.0", Integer.valueOf(port)).sync();
-        logger.info("服务已启动，监听端口:"+port);
+        String port = PropertiesUtils.getProperty("server.port");
+        if (StringUtils.isNotEmpty(port)){
+            this.port=Integer.parseInt(port);
+        }
+        ChannelFuture channelFuture = launcher.serverBootstrap.bind("0.0.0.0",this.port).sync();
+        logger.info("服务已启动，监听端口:"+ this.port);
         serverRegister();
         channelFuture.channel().closeFuture().sync();
     }
