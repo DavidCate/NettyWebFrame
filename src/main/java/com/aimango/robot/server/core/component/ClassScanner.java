@@ -18,16 +18,16 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class ClassScanner {
-    private static final Logger logger= LoggerFactory.getLogger(ClassScanner.class);
+    private static final Logger logger = LoggerFactory.getLogger(ClassScanner.class);
 
     public static Set<Class> scanComponents(String scanPath) throws IOException, ClassNotFoundException {
         Set<Class> classSet = new HashSet<>();
 
         Set<Class> scan = scan(scanPath);
 
-        for (Class clazz:scan){
+        for (Class clazz : scan) {
             boolean annotateWith = isAnnotateWith(clazz, Component.class);
-            if (annotateWith){
+            if (annotateWith) {
                 if (!(clazz.isAnnotation() || clazz.isEnum() || clazz.isInterface())) {
                     classSet.add(clazz);
                 }
@@ -41,40 +41,41 @@ public class ClassScanner {
 
     /**
      * 获取类路径下某个包下的所有类
+     *
      * @param packageName
      * @return
      * @throws IOException
      * @throws ClassNotFoundException
      */
     public static Set<Class> scan(String packageName) throws IOException, ClassNotFoundException {
-        Set<Class> classes=new HashSet<>();
+        Set<Class> classes = new HashSet<>();
         String packagePath = packageName.replace(".", "/");
         Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources("");
-        while (resources.hasMoreElements()){
+        while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
-            URLClassLoader urlClassLoader=new URLClassLoader(new URL[]{url}, Thread.currentThread().getContextClassLoader());
-            System.out.println(url.toString());
-
+            URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{url}, Thread.currentThread().getContextClassLoader());
+            logger.info("开始进行类扫描");
+            logger.info(url.toString());
             String protocol = url.getProtocol();
-            System.out.println("协议："+protocol);
-            if ("jar".equals(protocol)){
-                JarURLConnection jarURLConnection=(JarURLConnection) url.openConnection();
+            logger.info("协议：" + protocol);
+            if ("jar".equals(protocol)) {
+                JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
                 JarFile jarFile = jarURLConnection.getJarFile();
                 Enumeration<JarEntry> entries = jarFile.entries();
-                while (entries.hasMoreElements()){
+                while (entries.hasMoreElements()) {
                     JarEntry jarEntry = entries.nextElement();
                     String name = jarEntry.getName();
                     int index = name.indexOf(packagePath);
-                    if (index!=-1&&name.endsWith(".class")){
+                    if (index != -1 && name.endsWith(".class")) {
                         String replace = name.substring(index, name.length() - 6).replace("/", ".");
                         Class clazz = urlClassLoader.loadClass(replace);
                         classes.add(clazz);
                     }
                 }
-            }else if("file".endsWith(protocol)){
+            } else if ("file".endsWith(protocol)) {
                 String path = url.getPath();
                 String targetPath = path + "/" + packagePath;
-                addClasses(targetPath,classes,packageName);
+                addClasses(targetPath, classes, packageName);
             }
         }
         return classes;
@@ -88,29 +89,29 @@ public class ClassScanner {
             }
         });
 
-        for (File file:files){
+        for (File file : files) {
             String fileName = file.getName();
-            if (file.isFile()){
+            if (file.isFile()) {
                 String className = fileName.substring(0, fileName.lastIndexOf("."));
                 String fullClassName = packageName + "." + className;
                 Class clazz = Thread.currentThread().getContextClassLoader().loadClass(fullClassName);
                 classes.add(clazz);
-            }else {
+            } else {
                 String subPackagePath = path + "/" + fileName;
                 String subPackageName = packageName + "." + fileName;
-                addClasses(subPackagePath,classes,subPackageName);
+                addClasses(subPackagePath, classes, subPackageName);
             }
         }
     }
 
-    public static boolean isAnnotateWith(Class clazz, Class targetAnnotation){
+    public static boolean isAnnotateWith(Class clazz, Class targetAnnotation) {
         Annotation[] annotations = clazz.getAnnotations();
-        for (Annotation annotation:annotations){
+        for (Annotation annotation : annotations) {
             Class<? extends Annotation> aClass = annotation.annotationType();
-            if (aClass.equals(targetAnnotation)){
+            if (aClass.equals(targetAnnotation)) {
                 return true;
             }
-            if (aClass.isAnnotationPresent(targetAnnotation)){
+            if (aClass.isAnnotationPresent(targetAnnotation)) {
                 return true;
             }
         }
