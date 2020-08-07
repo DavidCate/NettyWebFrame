@@ -34,6 +34,7 @@ public class TestRestController {
         System.out.println(JSON.toJSONString(pojo));
         fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
         fullHttpResponse.content().writeBytes("xxx".getBytes());
+        fullHttpResponse.content().writeBytes("\r\n".getBytes());
         fullHttpResponse.content().writeBytes(Unpooled.wrappedBuffer("xxxxx".getBytes()));
         return fullHttpResponse;
     }
