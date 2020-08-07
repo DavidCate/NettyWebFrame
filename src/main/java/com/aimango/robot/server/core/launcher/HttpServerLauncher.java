@@ -1,5 +1,6 @@
-package com.aimango.robot.server;
+package com.aimango.robot.server.core.launcher;
 
+import com.aimango.robot.server.MyServer;
 import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.core.container.ContainerBuilder;
 import com.aimango.robot.server.core.initializer.RobotServerInitializer;
@@ -29,6 +30,17 @@ public class HttpServerLauncher {
     //容器
     private static Container container;
 
+    private String basePackage;
+
+    public static void run(Class clazz, String[] args) {
+        String className = clazz.getName();
+        int index = className.lastIndexOf('.');
+        String packageName=className.substring(0,index);
+        HttpServerLauncher httpServerLauncher=new HttpServerLauncher();
+        httpServerLauncher.basePackage=packageName;
+        httpServerLauncher.launch();
+    }
+
     private HttpServerLauncher init() throws Exception {
         logger.info("服务器初始化");
         serverInit();
@@ -41,7 +53,7 @@ public class HttpServerLauncher {
         if (container!=null){
             throw new Exception("容器已经存在！");
         }
-        ContainerBuilder containerBuilder=new ContainerBuilder();
+        ContainerBuilder containerBuilder=new ContainerBuilder(basePackage);
         Container container = containerBuilder.build();
         HttpServerLauncher.container=container;
     }
@@ -93,11 +105,6 @@ public class HttpServerLauncher {
 
     public static HttpServerLauncher newInstance(){
         return new HttpServerLauncher();
-    }
-
-    public static void main(String[] args) {
-        HttpServerLauncher httpServerLauncher = HttpServerLauncher.newInstance();
-        httpServerLauncher.launch();
     }
 
     class ShutDownBefore implements Runnable {

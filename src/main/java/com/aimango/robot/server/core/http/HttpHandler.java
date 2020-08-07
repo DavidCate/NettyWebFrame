@@ -1,6 +1,6 @@
 package com.aimango.robot.server.core.http;
 
-import com.aimango.robot.server.HttpServerLauncher;
+import com.aimango.robot.server.core.launcher.HttpServerLauncher;
 import com.aimango.robot.server.core.annotation.RequestMapping;
 import com.aimango.robot.server.core.annotation.rest.RestRequestMapping;
 import com.aimango.robot.server.core.container.FullClassContainer;

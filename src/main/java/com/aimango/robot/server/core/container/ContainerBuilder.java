@@ -11,13 +11,17 @@ import java.util.Set;
 
 public class ContainerBuilder implements Builder<Container>{
     private static final Logger logger= LoggerFactory.getLogger(ContainerBuilder.class);
-    private static final String DEFAULT_PACKAGE="com.aimango.robot.server";
+    private String packageName;
+
+    public ContainerBuilder(String basePackage) {
+        this.packageName=basePackage;
+    }
 
     @Override
     public Container build() throws InstantiationException, IllegalAccessException, IOException, ClassNotFoundException {
         logger.info("构建容器");
         //扫描所有@Component的类
-        Set<Class> classes = ClassScanner.scanComponents();
+        Set<Class> classes = ClassScanner.scanComponents(packageName);
         FullClassContainer fullClassContainer=new FullClassContainer(classes);
         return fullClassContainer;
     }

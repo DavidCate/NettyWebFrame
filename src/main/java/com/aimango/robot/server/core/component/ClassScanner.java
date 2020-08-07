@@ -19,12 +19,11 @@ import java.util.jar.JarFile;
 
 public class ClassScanner {
     private static final Logger logger= LoggerFactory.getLogger(ClassScanner.class);
-    private static final String BASE_PACKATE="com.aimango.robot.server";
 
-    public static Set<Class> scanComponents() throws IOException, ClassNotFoundException {
+    public static Set<Class> scanComponents(String scanPath) throws IOException, ClassNotFoundException {
         Set<Class> classSet = new HashSet<>();
 
-        Set<Class> scan = scan(BASE_PACKATE);
+        Set<Class> scan = scan(scanPath);
 
         for (Class clazz:scan){
             boolean annotateWith = isAnnotateWith(clazz, Component.class);
