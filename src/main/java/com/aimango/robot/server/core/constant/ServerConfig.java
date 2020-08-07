@@ -7,6 +7,11 @@ public class ServerConfig {
 
     public static final String NETWORK_CARD="network.card";
 
+    public class Config{
+        public static final String CONFIG_MODE_LOCAL="local";
+        public static final String CONFIG_MODE_NACOS="nacos";
+    }
+
     public class Nacos {
         public static final String SERVER_ADDR="nacos.server.addr";
         public static final String NAMESPACE="nacos.config.namespace";

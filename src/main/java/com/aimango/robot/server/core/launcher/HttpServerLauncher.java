@@ -1,10 +1,9 @@
 package com.aimango.robot.server.core.launcher;
 
-import com.aimango.robot.server.MyServer;
+
 import com.aimango.robot.server.core.component.Nacos;
 import com.aimango.robot.server.core.component.PropertiesUtils;
 import com.aimango.robot.server.core.constant.ServerConfig;
-import com.aimango.robot.server.core.constant.ServerConfigMode;
 import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.core.container.ContainerBuilder;
 import com.aimango.robot.server.core.initializer.RobotServerInitializer;
@@ -16,31 +15,29 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Properties;
 
 
 public class HttpServerLauncher {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerLauncher.class);
-    //请求分发工作组
+
     private EventLoopGroup bossGroup = new NioEventLoopGroup();
-    //请求处理工作组
+
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
-    //服务器配置类
+
     private ServerBootstrap serverBootstrap = new ServerBootstrap();
-    //默认端口
+
     int port=8080;
-    //容器
+
     private static Container container;
 
     private String basePackage;
 
-    private String configMode= ServerConfigMode.LOCAL;
+    private String configMode= ServerConfig.Config.CONFIG_MODE_LOCAL;
 
     public static void run(Class clazz, String[] args) {
         String className = clazz.getName();
@@ -103,7 +100,7 @@ public class HttpServerLauncher {
     }
 
     private void start(HttpServerLauncher launcher) throws InterruptedException, IOException {
-        if (configMode.equals(ServerConfigMode.NACOS)){
+        if (configMode.equals(ServerConfig.Config.CONFIG_MODE_NACOS)){
             this.port =Integer.parseInt(Nacos.getPropertiesField(ServerConfig.SERVER_PORT)) ;
         }else {
             this.port =Integer.parseInt(PropertiesUtils.getProperty("server.port")) ;
