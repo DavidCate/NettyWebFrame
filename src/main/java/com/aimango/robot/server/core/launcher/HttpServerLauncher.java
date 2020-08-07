@@ -1,7 +1,10 @@
 package com.aimango.robot.server.core.launcher;
 
 import com.aimango.robot.server.MyServer;
+import com.aimango.robot.server.core.component.Nacos;
 import com.aimango.robot.server.core.component.PropertiesUtils;
+import com.aimango.robot.server.core.constant.ServerConfig;
+import com.aimango.robot.server.core.constant.ServerConfigMode;
 import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.core.container.ContainerBuilder;
 import com.aimango.robot.server.core.initializer.RobotServerInitializer;
@@ -17,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Properties;
 
 
@@ -35,6 +39,8 @@ public class HttpServerLauncher {
     private static Container container;
 
     private String basePackage;
+
+    private String configMode= ServerConfigMode.LOCAL;
 
     public static void run(Class clazz, String[] args) {
         String className = clazz.getName();
@@ -96,10 +102,11 @@ public class HttpServerLauncher {
         }
     }
 
-    private void start(HttpServerLauncher launcher) throws InterruptedException {
-        String port = PropertiesUtils.getProperty("server.port");
-        if (StringUtils.isNotEmpty(port)){
-            this.port=Integer.parseInt(port);
+    private void start(HttpServerLauncher launcher) throws InterruptedException, IOException {
+        if (configMode.equals(ServerConfigMode.NACOS)){
+            this.port =Integer.parseInt(Nacos.getPropertiesField(ServerConfig.SERVER_PORT)) ;
+        }else {
+            this.port =Integer.parseInt(PropertiesUtils.getProperty("server.port")) ;
         }
         ChannelFuture channelFuture = launcher.serverBootstrap.bind("0.0.0.0",this.port).sync();
         logger.info("服务已启动，监听端口:"+ this.port);

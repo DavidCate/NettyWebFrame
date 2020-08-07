@@ -1,5 +1,6 @@
 package com.aimango.robot.server.core.component;
 
+import com.aimango.robot.server.core.constant.ServerConfig;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.config.ConfigService;
@@ -57,8 +58,7 @@ public class Nacos {
                 String content = configService.getConfig(dataId, group, timeoutMs);
                 res = content;
             } catch (NacosException e) {
-                // TODO Auto-generated catch block
-                logger.error("context", e);
+                logger.error("NACOS异常", e);
             }
             return res;
         }
@@ -232,24 +232,22 @@ public class Nacos {
         }
     }
 
-    private static void setDefaultProperties() {
+    private static void setDefaultProperties() throws IOException {
         Properties configProperties = new Properties();
         InputStream inputStream = Nacos.class.getClassLoader().getResourceAsStream("bootstrap.properties");
         logger.info("读取bootstrap.properties");
-        try {
-            configProperties.load(inputStream);
-        } catch (IOException e) {
-            logger.error("context", e);
-        }
-        String name = configProperties.getProperty("spring.application.name");
+        configProperties.load(inputStream);
+
+
+        String name = configProperties.getProperty(ServerConfig.SERVER_NAME);
         logger.info("application name : " + name);
-        String after = configProperties.getProperty("spring.cloud.nacos.config.file-extension");
+        String after = configProperties.getProperty(ServerConfig.Nacos.CONFIG.FILE_EXTENSION);
         String dataId = name + "." + after;
-        String group = configProperties.getProperty("spring.cloud.nacos.config.group");
+        String group = configProperties.getProperty(ServerConfig.Nacos.CONFIG.GROUP);
         logger.info("application group : " + group);
-        String serverAddr = configProperties.getProperty("spring.cloud.nacos.discovery.server-addr");
+        String serverAddr = configProperties.getProperty(ServerConfig.Nacos.SERVER_ADDR);
         logger.info("serverAddr:" + serverAddr);
-        String namespace = configProperties.getProperty("spring.cloud.nacos.config.namespace");
+        String namespace = configProperties.getProperty(ServerConfig.Nacos.NAMESPACE);
         logger.info("namespace:" + namespace);
         String config = ConfigManager.getConfig(dataId, group, 3000, serverAddr, namespace);
         Properties res = new Properties();
@@ -287,7 +285,7 @@ public class Nacos {
         propertiesMap = map;
     }
 
-    private static void initProperteis() {
+    private static void initProperteis() throws IOException {
         if (properties == null) {
             synchronized (Nacos.class) {
                 if (properties == null) {
@@ -311,16 +309,7 @@ public class Nacos {
         }
     }
 
-    public static Properties getDefaultProperties() {
-        logger.info("获取nacos远程配置文件");
-        if (properties == null) {
-            initProperteis();
-        }
-        logger.info("配置文件读取完毕");
-        return properties;
-    }
-
-    public static String getPropertiesField(String key) {
+    public static String getPropertiesField(String key) throws IOException {
         if (properties == null) {
             initProperteis();
         }
@@ -339,13 +328,13 @@ public class Nacos {
         InputStream inputStream = Nacos.class.getClassLoader().getResourceAsStream("bootstrap.properties");
         logger.info("读取bootstrap.properties");
         configProperties.load(inputStream);
-        String serverAddr = configProperties.getProperty("spring.cloud.nacos.config.server-addr");
+        String serverAddr = configProperties.getProperty(ServerConfig.Nacos.SERVER_ADDR);
         logger.info("serverAddr:" + serverAddr);
-        String namespace = configProperties.getProperty("spring.cloud.nacos.discovery.namespace");
+        String namespace = configProperties.getProperty(ServerConfig.Nacos.NAMESPACE);
         logger.info("namespace:" + namespace);
-        String netCard = Nacos.getPropertiesField("net.card");
+        String netCard = Nacos.getPropertiesField(ServerConfig.NETWORK_CARD);
         String ip = getLocalIp(netCard);
-        ServiceDiscovery.registerInstance(serverName, ip, Integer.parseInt(Nacos.getPropertiesField("websocket.port")), "NettyCluster", serverAddr, namespace);
+        ServiceDiscovery.registerInstance(serverName, ip, Integer.parseInt(Nacos.getPropertiesField(ServerConfig.SERVER_PORT)), "NettyCluster", serverAddr, namespace);
         logger.info("NettyServer服务注册成功");
     }
 
@@ -373,14 +362,6 @@ public class Nacos {
         Yaml yaml = new Yaml();
         Map<String, String> map = yaml.load(config);
         logger.info(map.get("redis.host"));
-//        Properties pp=new Properties();
-//        BufferedReader reader=new BufferedReader(new StringReader(config));
-//        try {
-//            pp.load(reader);
-//        } catch (IOException e) {
-//           logger.error("context",e);
-//        }
-//        logger.info(pp.getProperty("redis.host"));
     }
 
     public static String getLocalIp(String netCard) {
