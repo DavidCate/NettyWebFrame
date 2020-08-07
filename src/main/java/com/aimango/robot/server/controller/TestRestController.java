@@ -1,32 +1,19 @@
-# NettyWebFrame
+package com.aimango.robot.server.controller;
 
-##这是一个轻量级的基于Netty的Web框架。仅仅是一个雏形，喜欢有兴趣的大佬可以一起来完善。
+import com.aimango.robot.server.core.annotation.Param;
+import com.aimango.robot.server.core.annotation.RequestBody;
+import com.aimango.robot.server.core.annotation.rest.PathParam;
+import com.aimango.robot.server.core.annotation.rest.RestController;
+import com.aimango.robot.server.core.annotation.rest.RestRequestMapping;
+import com.aimango.robot.server.pojo.Pojo;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 
-##目前该框架已经支持HTTP协议的处理和WEBSOCKET协议的处理
-
-##HTTP部分目前只做了常用的GET/POST请求的支持，后续可扩展
-
-##使用该框架可以轻松的开发web应用接口，提供了一些类似于Spring框架的注解,例如@Controller, @RequestMapping,@RequestBody,@Param，@RestController，@PathParam.
-
-##框架使用教程
-
-```java
-//普通http接口
-@Controller
-public class TestController {
-
-    @RequestMapping(url = "/xxx",method = RequestMapping.Method.POST)
-    public Object test(FullHttpRequest fullHttpRequest, @Param("xxx")String a, @RequestBody Pojo pojo, @MapperParam TestMapper testMapper){
-        System.out.println(a);
-        System.out.println(JSON.toJSONString(pojo));
-        Container container = HttpServerLauncher.getContainer();
-        container.getClass("");
-        Integer integer = testMapper.select1();
-        System.out.println(integer);
-        return null;
-    }
-}
-//rest http接口
 @RestController
 public class TestRestController {
 
@@ -51,7 +38,3 @@ public class TestRestController {
         return fullHttpResponse;
     }
 }
-```
-
-
-

@@ -1,9 +1,6 @@
 package com.aimango.robot.server.core.annotation.rest;
 
-
-
 import com.aimango.robot.server.core.annotation.Component;
-import com.aimango.robot.server.core.annotation.RequestMapping;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -15,7 +12,7 @@ import java.lang.annotation.Target;
 @Component
 public @interface RestRequestMapping {
     public String url();
-    public String method() default RequestMapping.Method.GET;
+    public String method() default RestRequestMapping.Method.GET;
 
     class Method{
         public static final String GET="get";
