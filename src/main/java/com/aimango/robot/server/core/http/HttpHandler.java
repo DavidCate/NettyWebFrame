@@ -61,14 +61,14 @@ public class HttpHandler implements Callable {
                         fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
                     }
                     if (fullClassContainer.isInterceptor()) {
-                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, null);
+                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, null,uriSub);
                     }
 
                 } catch (Exception e) {
                     fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR, Unpooled.wrappedBuffer(e.getMessage().getBytes()));
                     fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
                     if (fullClassContainer.isInterceptor()) {
-                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, e);
+                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, e,uriSub);
                     }
                 }
                 sendHttpResponse(fullHttpResponse);
@@ -95,13 +95,13 @@ public class HttpHandler implements Callable {
                         fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
                     }
                     if (fullClassContainer.isInterceptor()) {
-                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, null);
+                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, null,uriSub);
                     }
                 } catch (Exception e) {
                     fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR, Unpooled.wrappedBuffer(e.getMessage().getBytes()));
                     fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
                     if (fullClassContainer.isInterceptor()) {
-                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, e);
+                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, e,uriSub);
                     }
                 }
                 sendHttpResponse(fullHttpResponse);
@@ -114,13 +114,41 @@ public class HttpHandler implements Callable {
         return null;
     }
 
-    private void afterHandler(FullClassContainer fullClassContainer, FullHttpRequest request, FullHttpResponse response, Object handler, Exception ex) {
+    private void afterHandler(FullClassContainer fullClassContainer, FullHttpRequest request, FullHttpResponse response, Method method, Exception ex,String uriSub) {
         List<InterceptorRegistration> interceptorRegistrations = fullClassContainer.getInterceptorRegistrations();
         Iterator<InterceptorRegistration> iterator = interceptorRegistrations.iterator();
         while (iterator.hasNext()) {
             InterceptorRegistration interceptorRegistration = iterator.next();
-            Interceptor interceptor = interceptorRegistration.getInterceptor();
-            interceptor.afterCompletion(request, response, handler, ex);
+
+            List<String> exludePatterns = interceptorRegistration.getExludePatterns();
+            if (exludePatterns.size()>0){
+                Iterator<String> stringIterator = exludePatterns.iterator();
+                while (stringIterator.hasNext()) {
+                    String exludeUrl = stringIterator.next();
+                    if (!Pattern.matches(exludeUrl, uriSub)) {
+                        List<String> includePatterns = interceptorRegistration.getIncludePatterns();
+                        Iterator<String> iterator1 = includePatterns.iterator();
+                        while (iterator1.hasNext()) {
+                            String includeUrl = iterator1.next();
+                            if (Pattern.matches(includeUrl, uriSub)) {
+                                Interceptor interceptor = interceptorRegistration.getInterceptor();
+                                interceptor.afterCompletion(fullHttpRequest,response,method,ex);
+                            }
+                        }
+                    }
+                }
+            }else {
+                List<String> includePatterns = interceptorRegistration.getIncludePatterns();
+                Iterator<String> iterator1 = includePatterns.iterator();
+                while (iterator1.hasNext()) {
+                    String includeUrl = iterator1.next();
+                    if (Pattern.matches(includeUrl, uriSub)) {
+                        Interceptor interceptor = interceptorRegistration.getInterceptor();
+                        interceptor.afterCompletion(fullHttpRequest,response,method,ex);
+                    }
+                }
+            }
+
         }
     }
 
@@ -132,24 +160,40 @@ public class HttpHandler implements Callable {
                 InterceptorRegistration interceptorRegistration = iterator.next();
 
                 List<String> exludePatterns = interceptorRegistration.getExludePatterns();
-                Iterator<String> stringIterator = exludePatterns.iterator();
-                while (stringIterator.hasNext()) {
-                    String exludeUrl = stringIterator.next();
-                    if (!Pattern.matches(exludeUrl, uriSub)) {
-                        List<String> includePatterns = interceptorRegistration.getIncludePatterns();
-                        Iterator<String> iterator1 = includePatterns.iterator();
-                        while (iterator1.hasNext()) {
-                            String includeUrl = iterator1.next();
-                            if (Pattern.matches(includeUrl, uriSub)) {
-                                Interceptor interceptor = interceptorRegistration.getInterceptor();
-                                boolean pass = interceptor.postHandler(fullHttpRequest, new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK), method);
-                                if (!pass) {
-                                    return false;
+                if (exludePatterns.size()>0){
+                    Iterator<String> stringIterator = exludePatterns.iterator();
+                    while (stringIterator.hasNext()) {
+                        String exludeUrl = stringIterator.next();
+                        if (!Pattern.matches(exludeUrl, uriSub)) {
+                            List<String> includePatterns = interceptorRegistration.getIncludePatterns();
+                            Iterator<String> iterator1 = includePatterns.iterator();
+                            while (iterator1.hasNext()) {
+                                String includeUrl = iterator1.next();
+                                if (Pattern.matches(includeUrl, uriSub)) {
+                                    Interceptor interceptor = interceptorRegistration.getInterceptor();
+                                    boolean pass = interceptor.postHandler(fullHttpRequest, new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK), method);
+                                    if (!pass) {
+                                        return false;
+                                    }
                                 }
                             }
                         }
                     }
+                }else {
+                    List<String> includePatterns = interceptorRegistration.getIncludePatterns();
+                    Iterator<String> iterator1 = includePatterns.iterator();
+                    while (iterator1.hasNext()) {
+                        String includeUrl = iterator1.next();
+                        if (Pattern.matches(includeUrl, uriSub)) {
+                            Interceptor interceptor = interceptorRegistration.getInterceptor();
+                            boolean pass = interceptor.postHandler(fullHttpRequest, new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK), method);
+                            if (!pass) {
+                                return false;
+                            }
+                        }
+                    }
                 }
+
             }
         }
         return true;

@@ -14,15 +14,6 @@ import java.lang.reflect.Method;
 public class WebFilter implements WebConfiguration {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new GlobalInterceptor()).addPathPatterns("/**").order(0);
-        registry.addInterceptor(new GlobalInterceptor()).addPathPatterns("/**").order(4);
-        registry.addInterceptor(new GlobalInterceptor()).addPathPatterns("/**").order(1);
-        registry.addInterceptor(new GlobalInterceptor()).addPathPatterns("/**").order(2);
-        registry.addInterceptor(new GlobalInterceptor()).addPathPatterns("/**").order(3);
-
-
-
-
-
+        registry.addInterceptor(new GlobalInterceptor()).addPathPatterns("/.*").order(0);
     }
 }
