@@ -3,6 +3,7 @@ package com.aimango.robot.server.core.mybatis.druid;
 
 
 import com.aimango.robot.server.core.component.Nacos;
+import com.aimango.robot.server.core.component.PropertiesUtils;
 import com.alibaba.druid.filter.Filter;
 import com.alibaba.druid.filter.logging.LogFilter;
 import com.alibaba.druid.filter.logging.Slf4jLogFilter;
@@ -41,20 +42,24 @@ public class DruidDataSourceFactory implements DataSourceFactory {
         filters.add(statFilter);
         dataSource.setProxyFilters(filters);
         dataSource.setTimeBetweenLogStatsMillis(300000);
-        logger.info("druid基础配置");
-        String url = Nacos.getPropertiesField("db.url");
+        Properties propertiesByFile = PropertiesUtils.getPropertiesByFile("bootstrap.properties");
+        String url = propertiesByFile.getProperty("db.url");
         logger.info("DB连接url:" + url);
-        String userName = Nacos.getPropertiesField("db.username");
-        String password = Nacos.getPropertiesField("db.password");
-        String connectionInitSqls = Nacos.getPropertiesField("db.connection-init-sqls");
+        String userName =   propertiesByFile.getProperty("db.username");
+        String password = propertiesByFile.getProperty("db.password");
+        String connectionInitSqls = propertiesByFile.getProperty("db.connection-init-sqls");
         dataSource.setUrl(url);
         dataSource.setUsername(userName);
         dataSource.setPassword(password);
         logger.info("配置连接池大小，超时等待");
-        dataSource.setInitialSize(5);
-        dataSource.setMinIdle(5);
-        dataSource.setMaxActive(50);
-        dataSource.setMaxWait(10000);
+        Integer initialSize =Integer.parseInt(propertiesByFile.getProperty("db.initialSize"));
+        dataSource.setInitialSize(initialSize);
+        Integer minIdle =Integer.parseInt(propertiesByFile.getProperty("db.minIdle"));
+        dataSource.setMinIdle(minIdle);
+        Integer maxActive =Integer.parseInt(propertiesByFile.getProperty("db.maxActive"));
+        dataSource.setMaxActive(maxActive);
+        Integer maxWait =Integer.parseInt(propertiesByFile.getProperty("db.maxWait"));
+        dataSource.setMaxWait(maxWait);
         /** 配置间隔多久启动一次DestroyThread，对连接池内的连接才进行一次检测，单位是毫秒。
          检测时:
          1.如果连接空闲并且超过minIdle以外的连接，如果空闲时间超过minEvictableIdleTimeMillis设置的值则直接物理关闭。
