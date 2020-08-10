@@ -1,9 +1,9 @@
 package com.aimango.robot.server.core.http;
 
+import com.aimango.robot.server.core.container.HttpClassContainer;
 import com.aimango.robot.server.core.launcher.HttpServerLauncher;
 import com.aimango.robot.server.core.annotation.RequestMapping;
 import com.aimango.robot.server.core.annotation.rest.RestRequestMapping;
-import com.aimango.robot.server.core.container.FullClassContainer;
 import com.aimango.robot.server.core.interceptor.Interceptor;
 import com.aimango.robot.server.core.interceptor.InterceptorRegistration;
 import com.alibaba.fastjson.JSON;
@@ -32,7 +32,7 @@ public class HttpHandler implements Callable {
 
     @Override
     public Object call() throws Exception {
-        FullClassContainer fullClassContainer = (FullClassContainer) HttpServerLauncher.getContainer();
+        HttpClassContainer fullClassContainer = (HttpClassContainer) HttpServerLauncher.getContainer();
         String uri = fullHttpRequest.uri();
         int indexOf = uri.indexOf("?");
         String uriSub;
@@ -114,7 +114,7 @@ public class HttpHandler implements Callable {
         return null;
     }
 
-    private void afterHandler(FullClassContainer fullClassContainer, FullHttpRequest request, FullHttpResponse response, Method method, Exception ex,String uriSub) {
+    private void afterHandler(HttpClassContainer fullClassContainer, FullHttpRequest request, FullHttpResponse response, Method method, Exception ex,String uriSub) {
         List<InterceptorRegistration> interceptorRegistrations = fullClassContainer.getInterceptorRegistrations();
         Iterator<InterceptorRegistration> iterator = interceptorRegistrations.iterator();
         while (iterator.hasNext()) {
@@ -152,7 +152,7 @@ public class HttpHandler implements Callable {
         }
     }
 
-    private boolean postHttpHandler(FullClassContainer fullClassContainer, String uriSub, Method method) {
+    private boolean postHttpHandler(HttpClassContainer fullClassContainer, String uriSub, Method method) {
         if (fullClassContainer.isInterceptor()) {
             List<InterceptorRegistration> interceptorRegistrations = fullClassContainer.getInterceptorRegistrations();
             Iterator<InterceptorRegistration> iterator = interceptorRegistrations.iterator();

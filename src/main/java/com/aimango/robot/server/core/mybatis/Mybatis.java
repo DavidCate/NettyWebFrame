@@ -13,7 +13,7 @@ import java.io.InputStream;
 
 public class Mybatis {
     private static final Logger logger= LoggerFactory.getLogger(Mybatis.class);
-    private final static String RESOURCE= PropertiesUtils.getProperty("mybatis.config.file");
+    private final static String RESOURCE= PropertiesUtils.getProperty("mybatis.config.location");
     private volatile static SqlSessionFactory sqlSessionFactory;
     private Mybatis(){}
 
@@ -44,7 +44,7 @@ public class Mybatis {
         if (sqlSessionFactory==null){
             init();
         }
-        return sqlSessionFactory.openSession();
+        return sqlSessionFactory.openSession(false);
     }
 
     public static SqlSession getTransactionalSqlSession(){

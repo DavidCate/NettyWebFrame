@@ -28,7 +28,7 @@ public class ClassScanner {
         for (Class clazz : scan) {
             boolean annotateWith = isAnnotateWith(clazz, Component.class);
             if (annotateWith) {
-                if (!(clazz.isAnnotation() || clazz.isEnum() || clazz.isInterface())) {
+                if (!(clazz.isAnnotation() || clazz.isEnum())) {
                     classSet.add(clazz);
                 }
             }

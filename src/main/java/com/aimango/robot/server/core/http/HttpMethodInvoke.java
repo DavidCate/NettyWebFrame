@@ -1,11 +1,11 @@
 package com.aimango.robot.server.core.http;
 
+import com.aimango.robot.server.core.container.HttpClassContainer;
 import com.aimango.robot.server.core.launcher.HttpServerLauncher;
 import com.aimango.robot.server.core.annotation.MapperParam;
 import com.aimango.robot.server.core.annotation.Param;
 import com.aimango.robot.server.core.annotation.RequestBody;
 import com.aimango.robot.server.core.annotation.rest.PathParam;
-import com.aimango.robot.server.core.container.FullClassContainer;
 import com.aimango.robot.server.core.mybatis.Mybatis;
 import com.alibaba.fastjson.JSON;
 import io.netty.buffer.ByteBuf;
@@ -119,7 +119,7 @@ public enum HttpMethodInvoke implements Invoker {
             if (pathParam){
                 PathParam annotation = parameter.getAnnotation(PathParam.class);
                 String paramName = annotation.value();
-                FullClassContainer container =(FullClassContainer) HttpServerLauncher.getContainer();
+                HttpClassContainer container =(HttpClassContainer) HttpServerLauncher.getContainer();
                 Map<String, Integer> restUriPathParamIndexInfoMap = container.getRestUriPathParamIndexInfoMap(uri);
                 Integer index = restUriPathParamIndexInfoMap.get(paramName);
                 if (index!=null){
