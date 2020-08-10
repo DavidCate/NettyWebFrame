@@ -22,7 +22,6 @@ public class ContainerBuilder implements Builder<Container>{
         logger.info("构建容器");
         //扫描所有@Component的类
         Set<Class> classes = ClassScanner.scanComponents(packageName);
-        IocTontainer iocTontainer = new IocTontainer(classes);
         System.out.println("....");
         HttpClassContainer httpClassContainer=new HttpClassContainer(classes);
         return httpClassContainer;
