@@ -88,24 +88,24 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
         }
 
         if (isWebConfiguration){
-            initInterceptors(clazz);
+            initInterceptors(entry);
             this.interceptor=true;
         }
         Annotation[] declaredAnnotations = clazz.getDeclaredAnnotations();
         List<Annotation> classAnnotations = Arrays.asList(declaredAnnotations);
         for (Annotation annotation:classAnnotations){
             if (annotation.annotationType()== Controller.class){
-                initHttpHandlerContainer(clazz);
+                initHttpHandlerContainer(entry);
             }
             if (annotation.annotationType()== RestController.class){
-                initRestHttpHandlerContainer(clazz);
+                initRestHttpHandlerContainer(entry);
             }
         }
     }
 
-    private void initInterceptors(Class<WebConfiguration> clazz) throws IllegalAccessException, InstantiationException {
+    private void initInterceptors(Map.Entry<Class, Object> entry) throws IllegalAccessException, InstantiationException {
         InterceptorRegistry interceptorRegistry=new InterceptorRegistry();
-        WebConfiguration webConfigurationInstance = clazz.newInstance();
+        WebConfiguration webConfigurationInstance = (WebConfiguration)entry.getValue();
         webConfigurationInstance.addInterceptors(interceptorRegistry);
         List<InterceptorRegistration> registrations = interceptorRegistry.getRegistrations();
         if (registrations.size()>0){
@@ -127,14 +127,15 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
         }
     }
 
-    private void initRestHttpHandlerContainer(Class clazz) throws InstantiationException, IllegalAccessException {
+    private void initRestHttpHandlerContainer(Map.Entry<Class, Object> entry) throws InstantiationException, IllegalAccessException {
+        Class clazz = entry.getKey();
         Method[] declaredMethods = clazz.getDeclaredMethods();
         for (Method method:declaredMethods){
-            restMethodHandler(method,clazz);
+            restMethodHandler(method,entry);
         }
     }
 
-    private void restMethodHandler(Method method, Class clazz) throws IllegalAccessException, InstantiationException {
+    private void restMethodHandler(Method method, Map.Entry<Class, Object> entry) throws IllegalAccessException, InstantiationException {
         boolean annotationPresent = method.isAnnotationPresent(RestRequestMapping.class);
         if (annotationPresent){
             RestRequestMapping annotation = method.getAnnotation(RestRequestMapping.class);
@@ -159,37 +160,32 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
             uriRegex=uriRegex.substring(0,uriRegex.length()-1);
             this.restUriPathParamIndexInfoMap.put(uriRegex,pathParamIndexMap);
             this.restUriMethodMap.put(uriRegex,method);
-            this.restMethodObjectMap.put(method,clazz.newInstance());
+            this.restMethodObjectMap.put(method,entry.getValue());
         }
     }
 
     /**
      * 处理所有的@Controller类
-     * @param clazz
      */
-    private void initHttpHandlerContainer(Class clazz) throws InstantiationException, IllegalAccessException {
-        Field[] declaredFields = clazz.getDeclaredFields();
-        for (Field field:declaredFields){
-            fieldHandler(field,clazz);
-        }
-
+    private void initHttpHandlerContainer(Map.Entry<Class, Object> entry) throws InstantiationException, IllegalAccessException {
+        Class clazz = entry.getKey();
         Method[] declaredMethods = clazz.getDeclaredMethods();
         for (Method method:declaredMethods){
-            methodHandler(method,clazz);
+            methodHandler(method,entry.getValue());
         }
     }
 
     /**
      * 处理Controller类的method
      */
-    private void methodHandler(Method method, Class clazz) throws IllegalAccessException, InstantiationException {
+    private void methodHandler(Method method, Object executor) throws IllegalAccessException, InstantiationException {
         boolean annotationPresent = method.isAnnotationPresent(RequestMapping.class);
         if (annotationPresent){
             RequestMapping annotation = method.getAnnotation(RequestMapping.class);
             String url = annotation.url();
             url = UriUtils.uri(url);
             this.uriMethodMap.put(url,method);
-            this.methodObjectMap.put(method,clazz.newInstance());
+            this.methodObjectMap.put(method,executor);
         }
     }
 
