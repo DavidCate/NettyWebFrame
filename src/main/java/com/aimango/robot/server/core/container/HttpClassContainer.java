@@ -20,8 +20,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-public class FullClassContainer extends ClassContainer implements RestHttpHandlerContainer{
-    private static final Logger logger= LoggerFactory.getLogger(FullClassContainer.class);
+public class HttpClassContainer extends IocContainer implements RestHttpHandlerContainer{
+    private static final Logger logger= LoggerFactory.getLogger(HttpClassContainer.class);
 
 //    private HttpHandlerContainer httpHandlerContainer;
 
@@ -57,30 +57,25 @@ public class FullClassContainer extends ClassContainer implements RestHttpHandle
 
     private boolean interceptor=false;
 
-    public FullClassContainer(Set<Class> classes) throws IllegalAccessException, InstantiationException {
+    public HttpClassContainer(Set<Class> classes) throws Exception {
         super(classes);
         init();
     }
 
-    private void init() throws InstantiationException, IllegalAccessException {
-        //所有的@Component
-        Set<Class> classes = getClasses();
-        if (classes!=null){
-            Iterator<Class> iterator = classes.iterator();
-            while (iterator.hasNext()){
-                Class next = iterator.next();
-                analyzeClassByAnnotation(next);
-            }
+    private void init() throws Exception {
+        Map<Class, Object> targetMap = getTargetMap();
+        for (Map.Entry<Class,Object> entry:targetMap.entrySet()){
+            analyzeClassByAnnotation(entry);
         }
         logger.info("容器构建完毕");
     }
 
     /**
      * 分离出所有的Controller
-     * @param clazz
      */
-    private void analyzeClassByAnnotation(Class clazz) throws IllegalAccessException, InstantiationException {
+    private void analyzeClassByAnnotation(Map.Entry<Class, Object> entry) throws IllegalAccessException, InstantiationException {
         boolean isWebConfiguration=false;
+        Class clazz = entry.getKey();
         Class[] interfaces = clazz.getInterfaces();
 
         for (Type type:interfaces){

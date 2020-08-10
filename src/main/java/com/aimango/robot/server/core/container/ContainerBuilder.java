@@ -24,7 +24,7 @@ public class ContainerBuilder implements Builder<Container>{
         Set<Class> classes = ClassScanner.scanComponents(packageName);
         IocTontainer iocTontainer = new IocTontainer(classes);
         System.out.println("....");
-        FullClassContainer fullClassContainer=new FullClassContainer(classes);
-        return fullClassContainer;
+        HttpClassContainer httpClassContainer=new HttpClassContainer(classes);
+        return httpClassContainer;
     }
 }

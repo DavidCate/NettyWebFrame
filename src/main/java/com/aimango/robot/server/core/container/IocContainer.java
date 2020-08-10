@@ -11,14 +11,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class IocTontainer extends ClassContainer {
-    private static final Logger logger = LoggerFactory.getLogger(IocTontainer.class);
+public class IocContainer extends ClassContainer {
+    private static final Logger logger = LoggerFactory.getLogger(IocContainer.class);
 
-    private static volatile Map<Class, Object> objectMap = new ConcurrentHashMap<>(128);
-    private static volatile Map<Class,Object> tempMap=new ConcurrentHashMap<>(128);
-    private static volatile Map<Class,Object> targetMap=new ConcurrentHashMap<>(128);
+    private  volatile Map<Class, Object> objectMap = new ConcurrentHashMap<>(128);
+    private  volatile Map<Class,Object> tempMap=new ConcurrentHashMap<>(128);
+    private  volatile Map<Class,Object> targetMap=new ConcurrentHashMap<>(128);
 
-    public IocTontainer(Set<Class> classes) throws Exception {
+    public IocContainer(Set<Class> classes) throws Exception {
         super(classes);
         init();
     }
@@ -136,5 +136,9 @@ public class IocTontainer extends ClassContainer {
         } catch (Exception e) {
             logger.error("不能够创建bean：" + clazz.getName() + ",请检查是否存在空参构造器");
         }
+    }
+
+    public Map<Class, Object> getTargetMap() {
+        return targetMap;
     }
 }
