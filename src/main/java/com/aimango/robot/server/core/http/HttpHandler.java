@@ -32,7 +32,7 @@ public class HttpHandler implements Callable {
 
     @Override
     public Object call() throws Exception {
-        HttpClassContainer fullClassContainer = (HttpClassContainer) HttpServerLauncher.getContainer();
+        HttpClassContainer httpClassContainer = (HttpClassContainer) HttpServerLauncher.getContainer();
         String uri = fullHttpRequest.uri();
         int indexOf = uri.indexOf("?");
         String uriSub;
@@ -42,15 +42,15 @@ public class HttpHandler implements Callable {
             uriSub = uri;
         }
 
-        Method method = fullClassContainer.getMethodByUri(uriSub);
+        Method method = httpClassContainer.getMethodByUri(uriSub);
         if (method != null) {
 
-            boolean pass = postHttpHandler(fullClassContainer, uriSub, method);
+            boolean pass = postHttpHandler(httpClassContainer, uriSub, method);
             if (pass) {
                 FullHttpResponse fullHttpResponse;
                 RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
                 String httpMethod = requestMapping.method();
-                Object executor = fullClassContainer.getExecutorByMethod(method);
+                Object executor = httpClassContainer.getExecutorByMethod(method);
                 try {
                     Object response = HttpMethodInvoke.valueOf(httpMethod.toUpperCase()).invoke(uriSub, executor, method, fullHttpRequest, false);
                     if (response instanceof FullHttpResponse) {
@@ -60,15 +60,15 @@ public class HttpHandler implements Callable {
                         fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(res.getBytes()));
                         fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
                     }
-                    if (fullClassContainer.isInterceptor()) {
-                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, null,uriSub);
+                    if (httpClassContainer.isInterceptor()) {
+                        afterHandler(httpClassContainer, fullHttpRequest, fullHttpResponse, method, null,uriSub);
                     }
 
                 } catch (Exception e) {
                     fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR, Unpooled.wrappedBuffer(e.getMessage().getBytes()));
                     fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
-                    if (fullClassContainer.isInterceptor()) {
-                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, e,uriSub);
+                    if (httpClassContainer.isInterceptor()) {
+                        afterHandler(httpClassContainer, fullHttpRequest, fullHttpResponse, method, e,uriSub);
                     }
                 }
                 sendHttpResponse(fullHttpResponse);
@@ -77,14 +77,14 @@ public class HttpHandler implements Callable {
             }
             return null;
         }
-        Method restMethod = fullClassContainer.getRestMethodByUri(uriSub);
+        Method restMethod = httpClassContainer.getRestMethodByUri(uriSub);
         if (restMethod != null) {
-            boolean pass = postHttpHandler(fullClassContainer, uriSub, restMethod);
+            boolean pass = postHttpHandler(httpClassContainer, uriSub, restMethod);
             if (pass) {
                 FullHttpResponse fullHttpResponse=null;
                 RestRequestMapping restRequestMapping = restMethod.getAnnotation(RestRequestMapping.class);
                 String httpMethod = restRequestMapping.method();
-                Object executor = fullClassContainer.getRestExecutorByMethod(restMethod);
+                Object executor = httpClassContainer.getRestExecutorByMethod(restMethod);
                 try {
                     Object response = HttpMethodInvoke.valueOf(httpMethod.toUpperCase()).invoke(uriSub, executor, restMethod, fullHttpRequest, true);
                     if (response instanceof FullHttpResponse) {
@@ -94,14 +94,14 @@ public class HttpHandler implements Callable {
                         fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(res.getBytes()));
                         fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
                     }
-                    if (fullClassContainer.isInterceptor()) {
-                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, null,uriSub);
+                    if (httpClassContainer.isInterceptor()) {
+                        afterHandler(httpClassContainer, fullHttpRequest, fullHttpResponse, method, null,uriSub);
                     }
                 } catch (Exception e) {
                     fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR, Unpooled.wrappedBuffer(e.getMessage().getBytes()));
                     fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
-                    if (fullClassContainer.isInterceptor()) {
-                        afterHandler(fullClassContainer, fullHttpRequest, fullHttpResponse, method, e,uriSub);
+                    if (httpClassContainer.isInterceptor()) {
+                        afterHandler(httpClassContainer, fullHttpRequest, fullHttpResponse, method, e,uriSub);
                     }
                 }
                 sendHttpResponse(fullHttpResponse);
@@ -114,8 +114,8 @@ public class HttpHandler implements Callable {
         return null;
     }
 
-    private void afterHandler(HttpClassContainer fullClassContainer, FullHttpRequest request, FullHttpResponse response, Method method, Exception ex,String uriSub) {
-        List<InterceptorRegistration> interceptorRegistrations = fullClassContainer.getInterceptorRegistrations();
+    private void afterHandler(HttpClassContainer httpClassContainer, FullHttpRequest request, FullHttpResponse response, Method method, Exception ex,String uriSub) {
+        List<InterceptorRegistration> interceptorRegistrations = httpClassContainer.getInterceptorRegistrations();
         Iterator<InterceptorRegistration> iterator = interceptorRegistrations.iterator();
         while (iterator.hasNext()) {
             InterceptorRegistration interceptorRegistration = iterator.next();
@@ -152,9 +152,9 @@ public class HttpHandler implements Callable {
         }
     }
 
-    private boolean postHttpHandler(HttpClassContainer fullClassContainer, String uriSub, Method method) {
-        if (fullClassContainer.isInterceptor()) {
-            List<InterceptorRegistration> interceptorRegistrations = fullClassContainer.getInterceptorRegistrations();
+    private boolean postHttpHandler(HttpClassContainer httpClassContainer, String uriSub, Method method) {
+        if (httpClassContainer.isInterceptor()) {
+            List<InterceptorRegistration> interceptorRegistrations = httpClassContainer.getInterceptorRegistrations();
             Iterator<InterceptorRegistration> iterator = interceptorRegistrations.iterator();
             while (iterator.hasNext()) {
                 InterceptorRegistration interceptorRegistration = iterator.next();
