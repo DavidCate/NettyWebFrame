@@ -10,6 +10,8 @@ import io.netty.handler.codec.http.FullHttpRequest;
 
 @Controller
 public class TestController {
+    @Autowired
+    A a;
 
     @RequestMapping(url = "/xxx",method = RequestMapping.Method.POST)
     public Object test(FullHttpRequest fullHttpRequest, @Param("xxx")String a, @RequestBody Pojo pojo, @MapperParam TestMapper testMapper){
@@ -19,6 +21,7 @@ public class TestController {
         container.getClass("");
         Integer integer = testMapper.select1();
         System.out.println(integer);
+        System.out.println(this.a.getAaa());
         return null;
     }
 }

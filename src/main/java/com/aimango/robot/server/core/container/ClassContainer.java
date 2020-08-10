@@ -38,21 +38,23 @@ public abstract class ClassContainer implements Container {
 
     @Override
     public Class getClass(String beanName) {
-        return null;
+        Class clazz = classes.get(beanName);
+        return clazz;
     }
 
     @Override
     public Class addClass(String beanName, Class clazz) {
-        return null;
+        Class put = classes.put(beanName, clazz);
+        return put;
     }
 
     @Override
     public boolean hasClass(String beanName) {
-        return false;
+        return classes.containsKey(beanName);
     }
 
     @Override
     public boolean hasClass(Class clazz) {
-        return false;
+        return classes.containsValue(clazz);
     }
 }

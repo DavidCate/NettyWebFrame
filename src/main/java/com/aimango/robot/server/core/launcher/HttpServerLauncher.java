@@ -21,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
 
 
 public class HttpServerLauncher {
@@ -51,10 +53,15 @@ public class HttpServerLauncher {
     }
 
     public static void run(Class clazz, String[] args) {
-
-        HttpServerLauncher httpServerLauncher = new HttpServerLauncher(clazz, args);
-
-        httpServerLauncher.launch();
+        Thread thread=new Thread(new FutureTask<Object>(new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                HttpServerLauncher httpServerLauncher = new HttpServerLauncher(clazz, args);
+                httpServerLauncher.launch();
+                return httpServerLauncher;
+            }
+        }));
+        thread.start();
     }
 
     private HttpServerLauncher init() throws Exception {
