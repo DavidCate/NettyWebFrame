@@ -248,8 +248,8 @@ public enum HttpMethodInvoke implements Invoker {
                     }
                 }
             }
-            boolean annotationPresent1 = interfaceImpl.isAnnotationPresent(Service.class);
-            if (annotationPresent1) {
+            boolean serviceAnnotation = interfaceImpl.isAnnotationPresent(Service.class);
+            if (serviceAnnotation) {
                 Map<Class, Class> instanceOfInterface = iocContainer.getInstanceOfInterface();
                 Class clazz = instanceOfInterface.get(interfaceImpl);
                 Object o = iocContainer.getTargetMap().get(clazz);
@@ -280,12 +280,7 @@ public enum HttpMethodInvoke implements Invoker {
                 Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
                 String value = repository.value();
                 if ("mybatis".equals(value)) {
-                    SqlSession sqlSession;
-                    Object mapper = Mybatis.getMapper(interfaceImpl);
-                    sqlSession = Mybatis.getSqlSession(mapper);
-                    sqlSession.commit();
-                    Mybatis.remove(mapper);
-
+                    Mybatis.remove(interfaceImpl);
                 }
             }
         }

@@ -59,7 +59,7 @@ public class Mybatis {
     public synchronized static <T> T getMapper(Class<T> mapperClass){
         SqlSession sqlSession=getSqlSession();
         T mapper = sqlSession.getMapper(mapperClass);
-        mapperSqlsession.put(mapper,sqlSession);
+        mapperSqlsession.put(mapperClass,sqlSession);
         return mapper;
     }
 
@@ -68,12 +68,14 @@ public class Mybatis {
         return sqlSession;
     }
 
-    public synchronized static SqlSession remove(Object mapper){
+    public synchronized static  <T> SqlSession remove(Class<T> mapperClass){
         SqlSession sqlSession=null;
         try {
-            sqlSession = mapperSqlsession.remove(mapper);
+            sqlSession = mapperSqlsession.get(mapperClass);
+            sqlSession.commit();
             return sqlSession;
         }finally {
+            mapperSqlsession.remove(mapperClass);
             closeSession(sqlSession);
         }
 
