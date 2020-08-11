@@ -1,13 +1,10 @@
 package com.aimango.robot.server.core.http;
 
-import com.aimango.robot.server.core.annotation.Repository;
+import com.aimango.robot.server.core.annotation.*;
 import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.core.container.HttpClassContainer;
 import com.aimango.robot.server.core.container.IocContainer;
 import com.aimango.robot.server.core.launcher.HttpServerLauncher;
-import com.aimango.robot.server.core.annotation.MapperParam;
-import com.aimango.robot.server.core.annotation.Param;
-import com.aimango.robot.server.core.annotation.RequestBody;
 import com.aimango.robot.server.core.annotation.rest.PathParam;
 import com.aimango.robot.server.core.mybatis.Mybatis;
 import com.alibaba.fastjson.JSON;
@@ -17,10 +14,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.Proxy;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +43,7 @@ public enum HttpMethodInvoke implements Invoker {
                     Object o = HttpMethodInvoke.innerInvoke(executor, method, fullHttpRequest);
                     return o;
                 } else {
-                    Object o = HttpMethodInvoke.restInnerInvoke(uri,executor, method, fullHttpRequest);
+                    Object o = HttpMethodInvoke.restInnerInvoke(uri, executor, method, fullHttpRequest);
                     return o;
                 }
 
@@ -62,7 +57,7 @@ public enum HttpMethodInvoke implements Invoker {
      */
     POST {
         @Override
-        public Object invoke(String uri,Object executor, Method method, FullHttpRequest fullHttpRequest, boolean isRestful) throws Exception {
+        public Object invoke(String uri, Object executor, Method method, FullHttpRequest fullHttpRequest, boolean isRestful) throws Exception {
             HttpMethod httpMethod = fullHttpRequest.method();
             boolean pass = HttpUtils.isMethodPass(HttpMethod.POST, httpMethod.name());
             if (pass) {
@@ -79,11 +74,11 @@ public enum HttpMethodInvoke implements Invoker {
         }
     };
 
-    private static Object restInnerInvoke(String uri, Object executor, Method method, FullHttpRequest fullHttpRequest) throws Exception{
+    private static Object restInnerInvoke(String uri, Object executor, Method method, FullHttpRequest fullHttpRequest) throws Exception {
         Parameter[] parameters = method.getParameters();
-        Object[] realParamValues=new Object[parameters.length];
+        Object[] realParamValues = new Object[parameters.length];
 
-        for (int i = 0 ; i<parameters.length;i++){
+        for (int i = 0; i < parameters.length; i++) {
             Parameter parameter = parameters[i];
             boolean requestBody = parameter.isAnnotationPresent(RequestBody.class);
             if (requestBody) {
@@ -121,19 +116,19 @@ public enum HttpMethodInvoke implements Invoker {
                 }
             }
             boolean pathParam = parameter.isAnnotationPresent(PathParam.class);
-            if (pathParam){
+            if (pathParam) {
                 PathParam annotation = parameter.getAnnotation(PathParam.class);
                 String paramName = annotation.value();
-                HttpClassContainer container =(HttpClassContainer) HttpServerLauncher.getContainer();
+                HttpClassContainer container = (HttpClassContainer) HttpServerLauncher.getContainer();
                 Map<String, Integer> restUriPathParamIndexInfoMap = container.getRestUriPathParamIndexInfoMap(uri);
                 Integer index = restUriPathParamIndexInfoMap.get(paramName);
-                if (index!=null){
+                if (index != null) {
                     String[] strings = uri.split("/");
                     String real = strings[index];
                     Class type = parameter.getType();
                     if (type == String.class) {
 
-                        realParamValues[i]=real;
+                        realParamValues[i] = real;
                     }
                     if (type == Integer.class || type == int.class) {
                         realParamValues[i] = Integer.parseInt(real);
@@ -141,7 +136,7 @@ public enum HttpMethodInvoke implements Invoker {
                     if (type == Double.class || type == double.class) {
                         realParamValues[i] = Double.parseDouble(real);
                     }
-                }else {
+                } else {
                     throw new Exception("框架rest接口处理解析异常，无法获取uri路径参数坐标，容器中rest api数据解析有问题，数据不一致");
                 }
             }
@@ -149,16 +144,18 @@ public enum HttpMethodInvoke implements Invoker {
             if (type.isAssignableFrom(FullHttpRequest.class)) {
                 realParamValues[i] = fullHttpRequest;
             }
-            if (type.isAssignableFrom(FullHttpResponse.class)){
+            if (type.isAssignableFrom(FullHttpResponse.class)) {
                 FullHttpResponse fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
                 fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
-                realParamValues[i]=fullHttpResponse;
+                realParamValues[i] = fullHttpResponse;
             }
         }
         try {
+            methodPreInvoke(executor);
             Object response = method.invoke(executor, realParamValues);
+            methodAfterInvoke(executor);
             return response;
-        }finally {
+        } finally {
 
         }
     }
@@ -209,10 +206,10 @@ public enum HttpMethodInvoke implements Invoker {
             if (type.isAssignableFrom(FullHttpRequest.class)) {
                 realParams[i] = fullHttpRequest;
             }
-            if (type.isAssignableFrom(FullHttpResponse.class)){
+            if (type.isAssignableFrom(FullHttpResponse.class)) {
                 FullHttpResponse fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
                 fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
-                realParams[i]=fullHttpResponse;
+                realParams[i] = fullHttpResponse;
             }
         }
         try {
@@ -220,56 +217,75 @@ public enum HttpMethodInvoke implements Invoker {
             Object response = method.invoke(executor, realParams);
             methodAfterInvoke(executor);
             return response;
-        }finally {
+        } finally {
 
         }
     }
 
     private static void methodPreInvoke(Object executor) throws NoSuchFieldException, IllegalAccessException {
-        IocContainer iocContainer =(IocContainer) HttpServerLauncher.getContainer();
+        IocContainer iocContainer = (IocContainer) HttpServerLauncher.getContainer();
         Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
         List<Class> interfaces = objectClassListMap.get(executor);
         Iterator<Class> iterator = interfaces.iterator();
-        while (iterator.hasNext()){
+        while (iterator.hasNext()) {
             Class interfaceImpl = iterator.next();
             boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
-            if (annotationPresent){
-                Repository repository=(Repository)interfaceImpl.getDeclaredAnnotation(Repository.class);
+            if (annotationPresent) {
+                Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
                 String value = repository.value();
-                if ("mybatis".equals(value)){
+                if ("mybatis".equals(value)) {
                     Object mapper = Mybatis.getMapper(interfaceImpl);
 
                     Field[] declaredFields = executor.getClass().getDeclaredFields();
-                    for (Field field:declaredFields){
-                        if (field.getType().equals(interfaceImpl)){
+                    for (Field field : declaredFields) {
+                        if (field.getType().equals(interfaceImpl)) {
                             boolean accessible = field.isAccessible();
-                            if (!accessible){
+                            if (!accessible) {
                                 field.setAccessible(true);
                             }
-                            field.set(executor,mapper);
+                            field.set(executor, mapper);
                         }
+                    }
+                }
+            }
+            boolean annotationPresent1 = interfaceImpl.isAnnotationPresent(Service.class);
+            if (annotationPresent1) {
+                Map<Class, Class> instanceOfInterface = iocContainer.getInstanceOfInterface();
+                Class clazz = instanceOfInterface.get(interfaceImpl);
+                Object o = iocContainer.getTargetMap().get(clazz);
+                Field[] declaredFields = executor.getClass().getDeclaredFields();
+                for (Field field : declaredFields) {
+                    if (field.getType().equals(interfaceImpl)) {
+                        boolean accessible = field.isAccessible();
+                        if (!accessible) {
+                            field.setAccessible(true);
+                        }
+                        field.set(executor, o);
+                        break;
                     }
                 }
             }
         }
     }
 
-    private static void methodAfterInvoke(Object executor){
-        IocContainer iocContainer =(IocContainer) HttpServerLauncher.getContainer();
+    private static void methodAfterInvoke(Object executor) {
+        IocContainer iocContainer = (IocContainer) HttpServerLauncher.getContainer();
         Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
         List<Class> interfaces = objectClassListMap.get(executor);
         Iterator<Class> iterator = interfaces.iterator();
-        while (iterator.hasNext()){
+        while (iterator.hasNext()) {
             Class interfaceImpl = iterator.next();
             boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
-            if (annotationPresent){
-                Repository repository=(Repository)interfaceImpl.getDeclaredAnnotation(Repository.class);
+            if (annotationPresent) {
+                Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
                 String value = repository.value();
-                if ("mybatis".equals(value)){
+                if ("mybatis".equals(value)) {
+                    SqlSession sqlSession;
                     Object mapper = Mybatis.getMapper(interfaceImpl);
-                    SqlSession sqlSession = Mybatis.getSqlSession(mapper);
+                    sqlSession = Mybatis.getSqlSession(mapper);
                     sqlSession.commit();
                     Mybatis.remove(mapper);
+
                 }
             }
         }

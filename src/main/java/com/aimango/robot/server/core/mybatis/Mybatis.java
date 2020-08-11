@@ -69,12 +69,22 @@ public class Mybatis {
     }
 
     public synchronized static SqlSession remove(Object mapper){
-        SqlSession remove = mapperSqlsession.remove(mapper);
-        return remove;
+        SqlSession sqlSession=null;
+        try {
+            sqlSession = mapperSqlsession.remove(mapper);
+            return sqlSession;
+        }finally {
+            closeSession(sqlSession);
+        }
+
     }
 
 
     public static void main(String[] args) {
         SqlSession sqlSession= Mybatis.getSqlSession();
+    }
+
+    public synchronized static void closeSession(SqlSession sqlSession) {
+        sqlSession.close();
     }
 }

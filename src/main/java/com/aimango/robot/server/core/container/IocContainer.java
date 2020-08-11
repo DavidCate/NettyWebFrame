@@ -20,6 +20,8 @@ public abstract class IocContainer extends ClassContainer {
     private volatile Map<Class, Object> targetMap = new ConcurrentHashMap<>(128);
     private volatile Set<Class> interfaces=new CopyOnWriteArraySet<>();
     private volatile Map<Object, List<Class>> objectClassListMap=new ConcurrentHashMap<>(128);
+    //接口class ，和实现了该接口的class的list
+    private volatile Map<Class,Class> instanceOfInterface=new ConcurrentHashMap<>(128);
 
     public IocContainer(Set<Class> classes) throws Exception {
         super(classes);
@@ -52,6 +54,7 @@ public abstract class IocContainer extends ClassContainer {
             if (autowiredRequied) {
                 tempMap.put(clazz, object);
             } else {
+                fillInstanceClassOfInterface(clazz);
                 targetMap.put(clazz, object);
             }
         }
@@ -63,6 +66,19 @@ public abstract class IocContainer extends ClassContainer {
         }
 
 
+    }
+
+    private void fillInstanceClassOfInterface(Class clazz) throws Exception {
+        Class[] interfaces = clazz.getInterfaces();
+        for (Class interfaceClass:interfaces){
+            boolean containsKey = instanceOfInterface.containsKey(interfaceClass);
+            if (containsKey){
+              throw new Exception("多个service实现类！");
+            }else {
+
+                instanceOfInterface.put(interfaceClass,clazz);
+            }
+        }
     }
 
     /**
@@ -82,7 +98,7 @@ public abstract class IocContainer extends ClassContainer {
                     if (anInterface){
                         List<Class> classes = objectClassListMap.get(object);
                         if (classes!=null&&!classes.contains(clazz)){
-                            classes.add(clazz);
+                            classes.add(fieldType);
                         }else {
                             CopyOnWriteArrayList<Class> list = new CopyOnWriteArrayList<>();
                             boolean contains = interfaces.contains(fieldType);
@@ -120,6 +136,7 @@ public abstract class IocContainer extends ClassContainer {
 
                 }
             }
+            fillInstanceClassOfInterface(clazz);
             targetMap.put(clazz,object);
         }
     }
@@ -173,5 +190,9 @@ public abstract class IocContainer extends ClassContainer {
 
     public Map<Object, List<Class>> getObjectClassListMap() {
         return objectClassListMap;
+    }
+
+    public Map<Class, Class> getInstanceOfInterface() {
+        return instanceOfInterface;
     }
 }
