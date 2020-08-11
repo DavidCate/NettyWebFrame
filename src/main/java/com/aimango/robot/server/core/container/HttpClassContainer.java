@@ -187,18 +187,6 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
         }
     }
 
-    /**
-     * 处理Controller类的成员变量
-     */
-    private void fieldHandler(Field field, Class clazz) {
-        boolean annotationPresent = field.isAnnotationPresent(Autowired.class);
-        if (annotationPresent){
-            Class declaringClass = field.getDeclaringClass();
-        }
-    }
-
-
-
     @Override
     public Method getMethodByUri(String uri) {
         Method method = uriMethodMap.get(uri);

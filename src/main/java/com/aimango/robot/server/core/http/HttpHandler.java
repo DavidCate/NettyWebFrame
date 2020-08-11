@@ -70,6 +70,7 @@ public class HttpHandler implements Callable {
                     if (httpClassContainer.isInterceptor()) {
                         afterHandler(httpClassContainer, fullHttpRequest, fullHttpResponse, method, e,uriSub);
                     }
+                    sendHttpResponse(fullHttpResponse);
                 }
                 sendHttpResponse(fullHttpResponse);
             }else {
@@ -103,6 +104,7 @@ public class HttpHandler implements Callable {
                     if (httpClassContainer.isInterceptor()) {
                         afterHandler(httpClassContainer, fullHttpRequest, fullHttpResponse, method, e,uriSub);
                     }
+                    sendHttpResponse(fullHttpResponse);
                 }
                 sendHttpResponse(fullHttpResponse);
             }else {

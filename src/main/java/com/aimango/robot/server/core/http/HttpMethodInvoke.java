@@ -1,6 +1,9 @@
 package com.aimango.robot.server.core.http;
 
+import com.aimango.robot.server.core.annotation.Repository;
+import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.core.container.HttpClassContainer;
+import com.aimango.robot.server.core.container.IocContainer;
 import com.aimango.robot.server.core.launcher.HttpServerLauncher;
 import com.aimango.robot.server.core.annotation.MapperParam;
 import com.aimango.robot.server.core.annotation.Param;
@@ -14,8 +17,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Proxy;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -210,10 +216,62 @@ public enum HttpMethodInvoke implements Invoker {
             }
         }
         try {
+            methodPreInvoke(executor);
             Object response = method.invoke(executor, realParams);
+            methodAfterInvoke(executor);
             return response;
         }finally {
 
+        }
+    }
+
+    private static void methodPreInvoke(Object executor) throws NoSuchFieldException, IllegalAccessException {
+        IocContainer iocContainer =(IocContainer) HttpServerLauncher.getContainer();
+        Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
+        List<Class> interfaces = objectClassListMap.get(executor);
+        Iterator<Class> iterator = interfaces.iterator();
+        while (iterator.hasNext()){
+            Class interfaceImpl = iterator.next();
+            boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
+            if (annotationPresent){
+                Repository repository=(Repository)interfaceImpl.getDeclaredAnnotation(Repository.class);
+                String value = repository.value();
+                if ("mybatis".equals(value)){
+                    Object mapper = Mybatis.getMapper(interfaceImpl);
+                    String interfaceName= interfaceImpl.getName();
+                    Field[] declaredFields = executor.getClass().getDeclaredFields();
+                    for (Field field:declaredFields){
+                        if (field.getName().equals(interfaceName)){
+                            boolean accessible = field.isAccessible();
+                            if (!accessible){
+                                field.setAccessible(true);
+                            }
+                            field.set(executor,mapper);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void methodAfterInvoke(Object executor){
+        IocContainer iocContainer =(IocContainer) HttpServerLauncher.getContainer();
+        Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
+        List<Class> interfaces = objectClassListMap.get(executor);
+        Iterator<Class> iterator = interfaces.iterator();
+        while (iterator.hasNext()){
+            Class interfaceImpl = iterator.next();
+            boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
+            if (annotationPresent){
+                Repository repository=(Repository)interfaceImpl.getDeclaredAnnotation(Repository.class);
+                String value = repository.value();
+                if ("mybatis".equals(value)){
+                    Object mapper = Mybatis.getMapper(interfaceImpl);
+                    SqlSession sqlSession = Mybatis.getSqlSession(mapper);
+                    sqlSession.commit();
+                    Mybatis.remove(mapper);
+                }
+            }
         }
     }
 }
