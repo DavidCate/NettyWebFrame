@@ -65,7 +65,8 @@ public class HttpHandler implements Callable {
                     }
 
                 } catch (Exception e) {
-                    fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR, Unpooled.wrappedBuffer(e.getMessage().getBytes()));
+                    String message = e.getMessage();
+                    fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR, Unpooled.wrappedBuffer(message.getBytes()));
                     fullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
                     if (httpClassContainer.isInterceptor()) {
                         afterHandler(httpClassContainer, fullHttpRequest, fullHttpResponse, method, e,uriSub);

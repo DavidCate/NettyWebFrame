@@ -238,10 +238,10 @@ public enum HttpMethodInvoke implements Invoker {
                 String value = repository.value();
                 if ("mybatis".equals(value)){
                     Object mapper = Mybatis.getMapper(interfaceImpl);
-                    String interfaceName= interfaceImpl.getName();
+
                     Field[] declaredFields = executor.getClass().getDeclaredFields();
                     for (Field field:declaredFields){
-                        if (field.getName().equals(interfaceName)){
+                        if (field.getType().equals(interfaceImpl)){
                             boolean accessible = field.isAccessible();
                             if (!accessible){
                                 field.setAccessible(true);
