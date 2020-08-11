@@ -29,7 +29,6 @@ public abstract class IocContainer extends ClassContainer {
         beanInit();
         dependencyInjection();
         refresh();
-        Map map = targetMap;
         logger.info("容器构建完毕");
     }
 
@@ -103,6 +102,7 @@ public abstract class IocContainer extends ClassContainer {
                     }
                 }
             }
+            targetMap.put(clazz,object);
         }
     }
 

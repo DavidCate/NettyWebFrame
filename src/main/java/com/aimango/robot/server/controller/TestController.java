@@ -13,8 +13,11 @@ public class TestController {
     @Autowired
     A a;
 
+    @Autowired
+    TestMapper testMapper;
+
     @RequestMapping(url = "/xxx",method = RequestMapping.Method.POST)
-    public Object test(FullHttpRequest fullHttpRequest, @Param("xxx")String a, @RequestBody Pojo pojo, @MapperParam TestMapper testMapper){
+    public Object test(FullHttpRequest fullHttpRequest, @Param("xxx")String a, @RequestBody Pojo pojo){
         System.out.println(a);
         System.out.println(JSON.toJSONString(pojo));
         Container container = HttpServerLauncher.getContainer();

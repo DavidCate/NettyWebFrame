@@ -23,8 +23,6 @@ import java.util.regex.Pattern;
 public class HttpClassContainer extends IocContainer implements RestHttpHandlerContainer{
     private static final Logger logger= LoggerFactory.getLogger(HttpClassContainer.class);
 
-//    private HttpHandlerContainer httpHandlerContainer;
-
     /**
      * 通过uri获取对应的method
      */
