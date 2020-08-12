@@ -17,6 +17,4 @@ public class GlobalInterceptor implements Interceptor {
     public void afterCompletion(FullHttpRequest request, FullHttpResponse response, Object handler, Exception ex) {
         System.out.println("全局拦截器aftercompletion");
     }
-
-
 }

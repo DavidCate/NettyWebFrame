@@ -7,6 +7,9 @@ public class ServerConfig {
 
     public static final String NETWORK_CARD="network.card";
 
+    public static final String SERVER_REGIST = "server.regist";
+
+
     public class Config{
         public static final String CONFIG_MODE_LOCAL="local";
         public static final String CONFIG_MODE_NACOS="nacos";

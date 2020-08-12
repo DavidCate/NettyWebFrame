@@ -142,7 +142,7 @@ public class HttpServerLauncher {
     }
 
     private void serverRegister() throws IOException, NacosException {
-        if (configMode.equals(ServerConfig.Config.CONFIG_MODE_NACOS)) {
+        if (configMode.equals(ServerConfig.Config.CONFIG_MODE_NACOS)&&Boolean.parseBoolean(Nacos.getPropertiesField(ServerConfig.SERVER_REGIST))) {
             String serviceName = Nacos.getPropertiesField(ServerConfig.SERVER_NAME);
             String ip = Nacos.getLocalIp(PropertiesUtils.getProperty(ServerConfig.NETWORK_CARD));
             int port = Integer.parseInt(Nacos.getPropertiesField(ServerConfig.SERVER_PORT));
