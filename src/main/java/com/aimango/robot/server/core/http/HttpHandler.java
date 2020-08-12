@@ -11,9 +11,11 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import net.sf.cglib.beans.BeanCopier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.List;
@@ -51,8 +53,13 @@ public class HttpHandler implements Callable {
                 RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
                 String httpMethod = requestMapping.method();
                 Object executor = httpClassContainer.getExecutorByMethod(method);
+                Class<?> executorClass = executor.getClass();
+                Constructor<?> declaredConstructor = executorClass.getDeclaredConstructor();
+                Object newInstance = declaredConstructor.newInstance();
+                BeanCopier beanCopier = BeanCopier.create(executor.getClass(), newInstance.getClass(), false);
+                beanCopier.copy(executor,newInstance,null);
                 try {
-                    Object response = HttpMethodInvoke.valueOf(httpMethod.toUpperCase()).invoke(uriSub, executor, method, fullHttpRequest, false);
+                    Object response = HttpMethodInvoke.valueOf(httpMethod.toUpperCase()).invoke(uriSub, newInstance, method, fullHttpRequest, false);
                     if (response instanceof FullHttpResponse) {
                         fullHttpResponse = (FullHttpResponse) response;
                     } else {
