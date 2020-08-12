@@ -81,6 +81,25 @@ public class Mybatis {
 
     }
 
+    public synchronized static  <T> SqlSession callbackRemove(Class<T> mapperClass){
+        SqlSession sqlSession=null;
+        try {
+            sqlSession = mapperSqlsession.get(mapperClass);
+            if (sqlSession!=null){
+                sqlSession.rollback();
+            }
+            return sqlSession;
+        }finally {
+            if (mapperSqlsession.containsKey(mapperClass)){
+                mapperSqlsession.remove(mapperClass);
+            }
+            if (sqlSession!=null){
+                closeSession(sqlSession);
+            }
+        }
+
+    }
+
 
     public static void main(String[] args) {
         SqlSession sqlSession= Mybatis.getSqlSession();

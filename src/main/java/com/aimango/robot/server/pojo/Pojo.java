@@ -1,7 +1,13 @@
 package com.aimango.robot.server.pojo;
 
+import com.aimango.robot.server.core.annotation.validate.NotEmpty;
+import com.aimango.robot.server.core.annotation.validate.Validate;
+
+@Validate
 public class Pojo {
+    @NotEmpty
     private String name;
+    @NotEmpty
     private int age;
 
     public String getName() {

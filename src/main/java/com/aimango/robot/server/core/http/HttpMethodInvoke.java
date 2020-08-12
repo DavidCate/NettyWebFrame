@@ -1,6 +1,9 @@
 package com.aimango.robot.server.core.http;
 
+import cn.hutool.core.lang.Validator;
+import cn.hutool.core.util.StrUtil;
 import com.aimango.robot.server.core.annotation.*;
+import com.aimango.robot.server.core.annotation.validate.*;
 import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.core.container.HttpClassContainer;
 import com.aimango.robot.server.core.container.IocContainer;
@@ -39,14 +42,17 @@ public enum HttpMethodInvoke implements Invoker {
             HttpMethod httpMethod = fullHttpRequest.method();
             boolean pass = HttpUtils.isMethodPass(HttpMethod.GET, httpMethod.name());
             if (pass) {
-                if (!isRestful) {
-                    Object o = HttpMethodInvoke.innerInvoke(executor, method, fullHttpRequest);
-                    return o;
-                } else {
-                    Object o = HttpMethodInvoke.restInnerInvoke(uri, executor, method, fullHttpRequest);
-                    return o;
+                try {
+                    if (!isRestful) {
+                        Object o = HttpMethodInvoke.innerInvoke(executor, method, fullHttpRequest);
+                        return o;
+                    } else {
+                        Object o = HttpMethodInvoke.restInnerInvoke(uri, executor, method, fullHttpRequest);
+                        return o;
+                    }
+                }catch (IllegalArgumentException i){
+                    return i.getMessage();
                 }
-
             } else {
                 return new HttpErrResponse("请求方法错误！");
             }
@@ -61,12 +67,16 @@ public enum HttpMethodInvoke implements Invoker {
             HttpMethod httpMethod = fullHttpRequest.method();
             boolean pass = HttpUtils.isMethodPass(HttpMethod.POST, httpMethod.name());
             if (pass) {
-                if (!isRestful) {
-                    Object o = HttpMethodInvoke.innerInvoke(executor, method, fullHttpRequest);
-                    return o;
-                } else {
-                    Object o = HttpMethodInvoke.restInnerInvoke(uri, executor, method, fullHttpRequest);
-                    return o;
+                try {
+                    if (!isRestful) {
+                        Object o = HttpMethodInvoke.innerInvoke(executor, method, fullHttpRequest);
+                        return o;
+                    } else {
+                        Object o = HttpMethodInvoke.restInnerInvoke(uri, executor, method, fullHttpRequest);
+                        return o;
+                    }
+                }catch (IllegalArgumentException i){
+                    return i.getMessage();
                 }
             } else {
                 return new HttpErrResponse("请求方法错误！");
@@ -82,17 +92,13 @@ public enum HttpMethodInvoke implements Invoker {
             Parameter parameter = parameters[i];
             boolean requestBody = parameter.isAnnotationPresent(RequestBody.class);
             if (requestBody) {
-                Class type = parameter.getType();
-                ByteBuf content = fullHttpRequest.content();
-                int length = content.readableBytes();
-                byte[] array = new byte[length];
-                content.readBytes(array);
-                String s = new String(array);
-                if (StringUtils.isEmpty(s)) {
-                    throw new IllegalArgumentException("RequestBody is Empty!");
+                boolean isJson = fullHttpRequest.headers().contains(HttpHeaderNames.CONTENT_TYPE,HttpHeaderValues.APPLICATION_JSON,true);
+                if (isJson){
+                    Object o=jsonParamTransfer(parameter,fullHttpRequest);
+                    realParamValues[i] = o;
+                }else {
+                    throw new IllegalArgumentException("非json格式请求参数!拒绝访问！");
                 }
-                Object o = JSON.parseObject(s, type);
-                realParamValues[i] = o;
             }
             boolean param = parameter.isAnnotationPresent(Param.class);
             if (param) {
@@ -155,8 +161,130 @@ public enum HttpMethodInvoke implements Invoker {
             Object response = method.invoke(executor, realParamValues);
             methodAfterInvoke(executor);
             return response;
-        } finally {
+        } catch (Exception e){
+            methodExceptionInvoke(executor);
+            throw e;
+        }
+    }
 
+    private static Object cycleCheck(Object object,Field field) throws IllegalAccessException {
+        if (object==null){
+            throw new IllegalArgumentException("字段:"+field.getName()+"为空！");
+        }
+        Class<?> clazz = field.getType();
+        boolean annotationPresent = clazz.isAnnotationPresent(Validate.class);
+        if (annotationPresent){
+            Field[] declaredFields = clazz.getDeclaredFields();
+            for (Field declaredField:declaredFields){
+                boolean accessible = declaredField.isAccessible();
+                if (!accessible){
+                    declaredField.setAccessible(true);
+                }
+
+                Annotation[] fieldAnnotations = declaredField.getDeclaredAnnotations();
+                for (Annotation annotation:fieldAnnotations){
+                    Class<? extends Annotation> annotationType = annotation.annotationType();
+                    if (annotationType.equals(Email.class)){
+                        String fieldString = String.valueOf(declaredField.get(object));
+                        boolean email = Validator.isEmail(fieldString);
+                        if (!email){
+                            throw new IllegalArgumentException("字段："+declaredField.getName()+"邮箱格式错误！");
+                        }
+                    }
+                    if (annotationType.equals(Mobile.class)){
+                        String fieldString = String.valueOf(declaredField.get(object));
+                        boolean mobile = Validator.isMobile(fieldString);
+                        if (!mobile){
+                            throw new IllegalArgumentException("字段："+declaredField.getName()+"手机格式错误！");
+                        }
+                    }
+                    if (annotationType.equals(NotEmpty.class)){
+                        String fieldString = String.valueOf(declaredField.get(object));
+                        if (!StrUtil.isNotEmpty(fieldString)){
+                            throw new IllegalArgumentException("字段："+declaredField.getName()+"值不能为空！");
+                        }
+                    }
+                    if (annotationType.equals(NotNull.class)){
+                        Object fieldObj = declaredField.get(object);
+                        Object o = declaredField.get(object);
+                        cycleCheck(o,declaredField);
+                        if (fieldObj==null){
+                            throw new IllegalArgumentException("字段："+declaredField.getName()+"不能为null！");
+                        }
+                    }
+                }
+
+            }
+            return object;
+        }else {
+            return object;
+        }
+    }
+
+    private static Object cycleCheck(Object object,Parameter parameter) throws IllegalAccessException {
+        Class<?> clazz = parameter.getType();
+        boolean annotationPresent = clazz.isAnnotationPresent(Validate.class);
+        if (annotationPresent){
+            Field[] declaredFields = clazz.getDeclaredFields();
+            for (Field declaredField:declaredFields){
+                boolean accessible = declaredField.isAccessible();
+                if (!accessible){
+                    declaredField.setAccessible(true);
+                }
+                Annotation[] fieldAnnotations = declaredField.getDeclaredAnnotations();
+                for (Annotation annotation:fieldAnnotations){
+                    Class<? extends Annotation> annotationType = annotation.annotationType();
+                    if (annotationType.equals(Email.class)){
+                        String fieldString = String.valueOf(declaredField.get(object));
+                        boolean email = Validator.isEmail(fieldString);
+                        if (!email){
+                            throw new IllegalArgumentException("字段："+declaredField.getName()+"邮箱格式错误！");
+                        }
+                    }
+                    if (annotationType.equals(Mobile.class)){
+                        String fieldString = String.valueOf(declaredField.get(object));
+                        boolean mobile = Validator.isMobile(fieldString);
+                        if (!mobile){
+                            throw new IllegalArgumentException("字段："+declaredField.getName()+"手机格式错误！");
+                        }
+                    }
+                    if (annotationType.equals(NotEmpty.class)){
+                        String fieldString = String.valueOf(declaredField.get(object));
+                        if (!StrUtil.isNotEmpty(fieldString)||declaredField.get(object)==null){
+                            throw new IllegalArgumentException("字段："+declaredField.getName()+"值不能为空！");
+                        }
+                    }
+                    if (annotationType.equals(NotNull.class)){
+                        Object fieldObj = declaredField.get(object);
+                        if (fieldObj==null){
+                            throw new IllegalArgumentException("字段："+declaredField.getName()+"不能为null！");
+                        }
+                        cycleCheck(fieldObj,declaredField);
+                    }
+                }
+
+            }
+            return object;
+        }else {
+            return object;
+        }
+    }
+    private static Object jsonParamTransfer(Parameter parameter, FullHttpRequest fullHttpRequest) throws IllegalArgumentException, IllegalAccessException {
+        try {
+            Class type = parameter.getType();
+            ByteBuf content = fullHttpRequest.content();
+            int length = content.readableBytes();
+            byte[] array = new byte[length];
+            content.readBytes(array);
+            String s = new String(array);
+            if (StringUtils.isEmpty(s)) {
+                throw new IllegalArgumentException("RequestBody is Empty!");
+            }
+            Object o = JSON.parseObject(s, type);
+            cycleCheck(o,parameter);
+            return o;
+        }catch (IllegalAccessException e){
+            throw e;
         }
     }
 
@@ -168,17 +296,13 @@ public enum HttpMethodInvoke implements Invoker {
             Parameter parameter = parameters[i];
             boolean requestBody = parameter.isAnnotationPresent(RequestBody.class);
             if (requestBody) {
-                Class type = parameter.getType();
-                ByteBuf content = fullHttpRequest.content();
-                int length = content.readableBytes();
-                byte[] array = new byte[length];
-                content.readBytes(array);
-                String s = new String(array);
-                if (StringUtils.isEmpty(s)) {
-                    throw new IllegalArgumentException("RequestBody is Empty!");
+                boolean isJson = fullHttpRequest.headers().contains(HttpHeaderNames.CONTENT_TYPE,HttpHeaderValues.APPLICATION_JSON,true);
+                if (isJson){
+                    Object o=jsonParamTransfer(parameter,fullHttpRequest);
+                    realParams[i] = o;
+                }else {
+                    throw new IllegalArgumentException("非json格式请求参数!拒绝访问！");
                 }
-                Object o = JSON.parseObject(s, type);
-                realParams[i] = o;
             }
             boolean param = parameter.isAnnotationPresent(Param.class);
             if (param) {
@@ -217,8 +341,9 @@ public enum HttpMethodInvoke implements Invoker {
             Object response = method.invoke(executor, realParams);
             methodAfterInvoke(executor);
             return response;
-        } finally {
-
+        } catch (Exception e){
+            methodExceptionInvoke(executor);
+            throw e;
         }
     }
 
@@ -281,6 +406,24 @@ public enum HttpMethodInvoke implements Invoker {
                 String value = repository.value();
                 if ("mybatis".equals(value)) {
                     Mybatis.remove(interfaceImpl);
+                }
+            }
+        }
+    }
+
+    private static void methodExceptionInvoke(Object executor) {
+        IocContainer iocContainer = (IocContainer) HttpServerLauncher.getContainer();
+        Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
+        List<Class> interfaces = objectClassListMap.get(executor);
+        Iterator<Class> iterator = interfaces.iterator();
+        while (iterator.hasNext()) {
+            Class interfaceImpl = iterator.next();
+            boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
+            if (annotationPresent) {
+                Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
+                String value = repository.value();
+                if ("mybatis".equals(value)) {
+                    Mybatis.callbackRemove(interfaceImpl);
                 }
             }
         }

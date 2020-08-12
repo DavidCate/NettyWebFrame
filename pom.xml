@@ -10,11 +10,10 @@
 
 
     <dependencies>
-        <!--反射工具包扫描类-->
         <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>0.9.12</version>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.3.10</version>
         </dependency>
         <!--分布式锁-->
         <dependency>
