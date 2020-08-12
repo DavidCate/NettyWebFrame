@@ -17,7 +17,7 @@ public class Mybatis {
     private final static String RESOURCE= PropertiesUtils.getProperty("mybatis.config.location");
     private volatile static SqlSessionFactory sqlSessionFactory;
     private Mybatis(){}
-    private volatile static ConcurrentHashMap<Object,SqlSession> mapperSqlsession=new ConcurrentHashMap<>(256);
+    private volatile static ConcurrentHashMap<Object,SqlSession> executorSqlsession=new ConcurrentHashMap<>(256);
 
     private static void init(){
         if (sqlSessionFactory==null){
@@ -27,7 +27,7 @@ public class Mybatis {
                     try {
                         inputStream = Resources.getResourceAsStream(RESOURCE);
                     } catch (IOException e) {
-                       logger.error("context",e);
+                        logger.error("context",e);
                     }
                     sqlSessionFactory=new SqlSessionFactoryBuilder().build(inputStream);
                 }
@@ -56,48 +56,60 @@ public class Mybatis {
         return sqlSessionFactory.openSession(false);
     }
 
-    public synchronized static <T> T getMapper(Class<T> mapperClass){
-        SqlSession sqlSession=getSqlSession();
+    public synchronized static <T> T getMapper(Class<T> mapperClass, Object executor){
+        SqlSession sqlSession = openExecutorSqlSession(executor);
         T mapper = sqlSession.getMapper(mapperClass);
-        mapperSqlsession.put(mapperClass,sqlSession);
         return mapper;
     }
 
-    public synchronized static SqlSession getSqlSession(Object mapper){
-        SqlSession sqlSession = mapperSqlsession.get(mapper);
-        return sqlSession;
-    }
-
-    public synchronized static  <T> SqlSession remove(Class<T> mapperClass){
-        SqlSession sqlSession=null;
-        try {
-            sqlSession = mapperSqlsession.get(mapperClass);
-            sqlSession.commit();
+    public synchronized static SqlSession openExecutorSqlSession(Object executor){
+        boolean containsKey = executorSqlsession.containsKey(executor);
+        if (containsKey){
+            return executorSqlsession.get(executor);
+        }else {
+            SqlSession sqlSession = getSqlSession();
+            executorSqlsession.put(executor, sqlSession);
             return sqlSession;
-        }finally {
-            mapperSqlsession.remove(mapperClass);
-            closeSession(sqlSession);
         }
-
     }
 
-    public synchronized static  <T> SqlSession callbackRemove(Class<T> mapperClass){
+    public synchronized static SqlSession commitAndCloseExecutorSqlSession(Object executor){
         SqlSession sqlSession=null;
         try {
-            sqlSession = mapperSqlsession.get(mapperClass);
-            if (sqlSession!=null){
-                sqlSession.rollback();
+            boolean containsKey = executorSqlsession.containsKey(executor);
+            if (containsKey){
+                sqlSession = executorSqlsession.get(executor);
+                sqlSession.commit();
+                return sqlSession;
+            }else {
+                return null;
             }
-            return sqlSession;
         }finally {
-            if (mapperSqlsession.containsKey(mapperClass)){
-                mapperSqlsession.remove(mapperClass);
-            }
             if (sqlSession!=null){
+                executorSqlsession.remove(executor);
                 closeSession(sqlSession);
             }
         }
 
+    }
+
+    public synchronized static  <T> SqlSession callback(Object executor){
+        SqlSession sqlSession=null;
+        try {
+            boolean containsKey = executorSqlsession.containsKey(executor);
+            if (containsKey){
+                sqlSession = executorSqlsession.get(executor);
+                sqlSession.rollback();
+                return sqlSession;
+            }else {
+                return null;
+            }
+        }finally {
+            if (sqlSession!=null){
+                executorSqlsession.remove(executor);
+                closeSession(sqlSession);
+            }
+        }
     }
 
 

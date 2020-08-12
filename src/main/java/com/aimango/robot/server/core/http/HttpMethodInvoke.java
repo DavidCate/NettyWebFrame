@@ -157,12 +157,12 @@ public enum HttpMethodInvoke implements Invoker {
             }
         }
         try {
-            methodPreInvoke(executor);
+            methodPreInvoke(executor,executor);
             Object response = method.invoke(executor, realParamValues);
-            methodAfterInvoke(executor);
+            methodAfterInvoke(executor,executor);
             return response;
         } catch (Exception e){
-            methodExceptionInvoke(executor);
+            methodExceptionInvoke(executor,executor);
             throw e;
         }
     }
@@ -200,7 +200,7 @@ public enum HttpMethodInvoke implements Invoker {
                     }
                     if (annotationType.equals(NotEmpty.class)){
                         String fieldString = String.valueOf(declaredField.get(object));
-                        if (!StrUtil.isNotEmpty(fieldString)){
+                        if (!StrUtil.isNotEmpty(fieldString)||declaredField.get(object)==null){
                             throw new IllegalArgumentException("字段："+declaredField.getName()+"值不能为空！");
                         }
                     }
@@ -337,30 +337,50 @@ public enum HttpMethodInvoke implements Invoker {
             }
         }
         try {
-            methodPreInvoke(executor);
+            methodPreInvoke(executor,executor);
             Object response = method.invoke(executor, realParams);
-            methodAfterInvoke(executor);
+            methodAfterInvoke(executor,executor);
             return response;
         } catch (Exception e){
-            methodExceptionInvoke(executor);
+            methodExceptionInvoke(executor,executor);
             throw e;
         }
     }
 
-    private static void methodPreInvoke(Object executor) throws NoSuchFieldException, IllegalAccessException {
+    private static void methodPreInvoke(Object executor,Object sessionOpener) throws NoSuchFieldException, IllegalAccessException {
         IocContainer iocContainer = (IocContainer) HttpServerLauncher.getContainer();
         Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
         List<Class> interfaces = objectClassListMap.get(executor);
-        Iterator<Class> iterator = interfaces.iterator();
-        while (iterator.hasNext()) {
-            Class interfaceImpl = iterator.next();
-            boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
-            if (annotationPresent) {
-                Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
-                String value = repository.value();
-                if ("mybatis".equals(value)) {
-                    Object mapper = Mybatis.getMapper(interfaceImpl);
+        if (interfaces!=null){
+            Iterator<Class> iterator = interfaces.iterator();
+            while (iterator.hasNext()) {
+                Class interfaceImpl = iterator.next();
+                boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
+                if (annotationPresent) {
+                    Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
+                    String value = repository.value();
+                    if ("mybatis".equals(value)) {
+                        Object mapper = Mybatis.getMapper(interfaceImpl,sessionOpener);
 
+                        Field[] declaredFields = executor.getClass().getDeclaredFields();
+                        for (Field field : declaredFields) {
+                            if (field.getType().equals(interfaceImpl)) {
+                                boolean accessible = field.isAccessible();
+                                if (!accessible) {
+                                    field.setAccessible(true);
+                                }
+                                field.set(executor, mapper);
+                            }
+                        }
+                    }
+                }
+                boolean serviceAnnotation = interfaceImpl.isAnnotationPresent(Service.class);
+                if (serviceAnnotation) {
+                    Map<Class, Class> instanceOfInterface = iocContainer.getInstanceOfInterface();
+                    Class clazz = instanceOfInterface.get(interfaceImpl);
+
+                    Object o = iocContainer.getTargetMap().get(clazz);
+                    methodPreInvoke(o,sessionOpener);
                     Field[] declaredFields = executor.getClass().getDeclaredFields();
                     for (Field field : declaredFields) {
                         if (field.getType().equals(interfaceImpl)) {
@@ -368,62 +388,68 @@ public enum HttpMethodInvoke implements Invoker {
                             if (!accessible) {
                                 field.setAccessible(true);
                             }
-                            field.set(executor, mapper);
+                            field.set(executor, o);
+                            break;
                         }
                     }
                 }
             }
-            boolean serviceAnnotation = interfaceImpl.isAnnotationPresent(Service.class);
-            if (serviceAnnotation) {
-                Map<Class, Class> instanceOfInterface = iocContainer.getInstanceOfInterface();
-                Class clazz = instanceOfInterface.get(interfaceImpl);
-                Object o = iocContainer.getTargetMap().get(clazz);
-                Field[] declaredFields = executor.getClass().getDeclaredFields();
-                for (Field field : declaredFields) {
-                    if (field.getType().equals(interfaceImpl)) {
-                        boolean accessible = field.isAccessible();
-                        if (!accessible) {
-                            field.setAccessible(true);
-                        }
-                        field.set(executor, o);
-                        break;
+        }
+
+    }
+
+    private static void methodAfterInvoke(Object executor,Object sessionOpener) {
+        IocContainer iocContainer = (IocContainer) HttpServerLauncher.getContainer();
+        Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
+        List<Class> interfaces = objectClassListMap.get(executor);
+        if (interfaces!=null){
+            Iterator<Class> iterator = interfaces.iterator();
+            while (iterator.hasNext()) {
+                Class interfaceImpl = iterator.next();
+                boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
+                if (annotationPresent) {
+                    Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
+                    String value = repository.value();
+                    if ("mybatis".equals(value)) {
+                        Mybatis.commitAndCloseExecutorSqlSession(sessionOpener);
                     }
+                }
+                boolean serviceAnnotation = interfaceImpl.isAnnotationPresent(Service.class);
+                if (serviceAnnotation) {
+                    Map<Class, Class> instanceOfInterface = iocContainer.getInstanceOfInterface();
+                    Class clazz = instanceOfInterface.get(interfaceImpl);
+
+                    Object o = iocContainer.getTargetMap().get(clazz);
+                    methodAfterInvoke(o,sessionOpener);
                 }
             }
         }
     }
 
-    private static void methodAfterInvoke(Object executor) {
+    private static void methodExceptionInvoke(Object executor,Object sessionOpener) {
         IocContainer iocContainer = (IocContainer) HttpServerLauncher.getContainer();
         Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
         List<Class> interfaces = objectClassListMap.get(executor);
-        Iterator<Class> iterator = interfaces.iterator();
-        while (iterator.hasNext()) {
-            Class interfaceImpl = iterator.next();
-            boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
-            if (annotationPresent) {
-                Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
-                String value = repository.value();
-                if ("mybatis".equals(value)) {
-                    Mybatis.remove(interfaceImpl);
-                }
-            }
-        }
-    }
 
-    private static void methodExceptionInvoke(Object executor) {
-        IocContainer iocContainer = (IocContainer) HttpServerLauncher.getContainer();
-        Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
-        List<Class> interfaces = objectClassListMap.get(executor);
-        Iterator<Class> iterator = interfaces.iterator();
-        while (iterator.hasNext()) {
-            Class interfaceImpl = iterator.next();
-            boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
-            if (annotationPresent) {
-                Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
-                String value = repository.value();
-                if ("mybatis".equals(value)) {
-                    Mybatis.callbackRemove(interfaceImpl);
+        if (interfaces!=null){
+            Iterator<Class> iterator = interfaces.iterator();
+            while (iterator.hasNext()) {
+                Class interfaceImpl = iterator.next();
+                boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
+                if (annotationPresent) {
+                    Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
+                    String value = repository.value();
+                    if ("mybatis".equals(value)) {
+                        Mybatis.callback(sessionOpener);
+                    }
+                }
+                boolean serviceAnnotation = interfaceImpl.isAnnotationPresent(Service.class);
+                if (serviceAnnotation) {
+                    Map<Class, Class> instanceOfInterface = iocContainer.getInstanceOfInterface();
+                    Class clazz = instanceOfInterface.get(interfaceImpl);
+
+                    Object o = iocContainer.getTargetMap().get(clazz);
+                    methodExceptionInvoke(o,sessionOpener);
                 }
             }
         }
