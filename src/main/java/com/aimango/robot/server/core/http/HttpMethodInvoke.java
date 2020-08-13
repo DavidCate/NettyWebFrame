@@ -368,52 +368,27 @@ public enum HttpMethodInvoke implements Invoker {
     private static Object classAutowiredInstance(Class clazz, IocContainer iocContainer, Object o,Object executor) throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InstantiationException {
         boolean anInterface = clazz.isInterface();
         if (anInterface) {
-            Map<Class, Class> interfaceImplMap = iocContainer.getInterfaceImplMap();
-            Class interfaceImplClass = interfaceImplMap.get(clazz);
-            if (interfaceImplClass != null) {
-                Constructor declaredConstructor = interfaceImplClass.getDeclaredConstructor();
-                boolean accessible = declaredConstructor.isAccessible();
-                if (!accessible){
-                    declaredConstructor.setAccessible(true);
-                }
-                Object interfaceImplInstance = declaredConstructor.newInstance();
-                return classAutowiredInstance(interfaceImplClass, iocContainer, interfaceImplInstance,executor);
-            } else {
-                boolean annotationPresent = interfaceImplClass.isAnnotationPresent(Repository.class);
-                if (annotationPresent) {
-                    Repository repository = (Repository) interfaceImplClass.getDeclaredAnnotation(Repository.class);
-                    String value = repository.value();
-                    if ("mybatis".equals(value)) {
-                        Object mapper = Mybatis.getMapper(clazz, executor);
-                        return mapper;
-                    } else {
-                        return null;
-                    }
-                } else {
-                    return null;
-                }
-            }
+           return interfaceAutowired(clazz, iocContainer, o, executor);
         } else {
+            //要填充的类不是接口
+            //获取要填充的类所需要的类
             Map<Class, Set<Class>> classRequiredClassesMap = iocContainer.getClassRequiredClassesMap();
             Set<Class> classes = classRequiredClassesMap.get(clazz);
             if (classes != null) {
+
                 Iterator<Class> iterator = classes.iterator();
                 while (iterator.hasNext()) {
                     Class requiredClass = iterator.next();
-                    Field field = clazz.getField(requiredClass.getName());
-                    boolean accessible = field.isAccessible();
-                    if (!accessible) {
+                    Object requiredInstance = classAutowiredInstance(requiredClass, iocContainer, o, executor);
+                    int i = requiredClass.getName().lastIndexOf(".");
+                    String substring = requiredClass.getName().substring(i + 1);
+                    String substring1 = substring.substring(0, 1);
+                    String name = substring1.toLowerCase().concat(substring.substring(1));
+                    Field field = clazz.getDeclaredField(name);
+                    if (!field.isAccessible()){
                         field.setAccessible(true);
                     }
-                    Constructor declaredConstructor = requiredClass.getDeclaredConstructor();
-                    boolean declaredConstructorAccessible = declaredConstructor.isAccessible();
-                    if (!declaredConstructorAccessible){
-                        declaredConstructor.setAccessible(true);
-                    }
-                    Object obj = declaredConstructor.newInstance();
-
-                    Object fieldInstance = classAutowiredInstance(requiredClass, iocContainer,obj, executor);
-                    field.set(o, fieldInstance);
+                    field.set(o,requiredInstance);
                 }
                 return o;
             } else {
@@ -424,6 +399,35 @@ public enum HttpMethodInvoke implements Invoker {
                 }
                 Object obj = declaredConstructor.newInstance();
                 return obj;
+            }
+        }
+    }
+
+    private static Object interfaceAutowired(Class clazz,IocContainer iocContainer,Object o ,Object executor) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchFieldException {
+        //要填充的类是个接口
+        Map<Class, Class> interfaceImplMap = iocContainer.getInterfaceImplMap();
+        Class interfaceImplClass = interfaceImplMap.get(clazz);
+        if (interfaceImplClass != null) {
+            Constructor declaredConstructor = interfaceImplClass.getDeclaredConstructor();
+            boolean accessible = declaredConstructor.isAccessible();
+            if (!accessible){
+                declaredConstructor.setAccessible(true);
+            }
+            Object interfaceImplInstance = declaredConstructor.newInstance();
+            return classAutowiredInstance(interfaceImplClass, iocContainer, interfaceImplInstance,executor);
+        } else {
+            boolean annotationPresent = clazz.isAnnotationPresent(Repository.class);
+            if (annotationPresent) {
+                Repository repository = (Repository) clazz.getDeclaredAnnotation(Repository.class);
+                String value = repository.value();
+                if ("mybatis".equals(value)) {
+                    Object mapper = Mybatis.getMapper(clazz, executor);
+                    return mapper;
+                } else {
+                    return null;
+                }
+            } else {
+                return null;
             }
         }
     }

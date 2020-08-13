@@ -7,7 +7,6 @@ import com.aimango.robot.server.core.constant.ServerConfig;
 import com.aimango.robot.server.core.container.Container;
 import com.aimango.robot.server.core.container.ContainerBuilder;
 import com.aimango.robot.server.core.initializer.RobotServerInitializer;
-import com.aimango.robot.server.utils.NacosClient;
 import com.alibaba.nacos.api.exception.NacosException;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.AdaptiveRecvByteBufAllocator;

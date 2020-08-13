@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Component
 public @interface RestRequestMapping {
     public String url();
-    public String method() default RestRequestMapping.Method.GET;
+    public String method() default Method.GET;
 
     class Method{
         public static final String GET="get";
