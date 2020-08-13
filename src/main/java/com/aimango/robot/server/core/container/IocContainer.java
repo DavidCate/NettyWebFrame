@@ -111,7 +111,7 @@ public abstract class IocContainer extends ClassContainer {
      */
     private void classSeparateInit() {
         //所有的@Component
-        Set<Class> classes = getClasses();
+        Set<Class> classes = super.getClasses();
         if (classes != null) {
             Iterator<Class> iterator = classes.iterator();
             while (iterator.hasNext()) {

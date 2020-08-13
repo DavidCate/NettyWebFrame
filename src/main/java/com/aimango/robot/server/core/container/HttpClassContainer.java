@@ -151,6 +151,7 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
             uriRegex=uriRegex.substring(0,uriRegex.length()-1);
             this.restUriPathParamIndexInfoMap.put(uriRegex,pathParamIndexMap);
             this.restUriMethodMap.put(uriRegex,method);
+            this.methodClassMap.put(method,methodHolder);
         }
     }
 
@@ -174,6 +175,7 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
             String url = annotation.url();
             url = UriUtils.uri(url);
             this.uriMethodMap.put(url,method);
+            this.methodClassMap.put(method,methodHolder);
         }
     }
 
@@ -190,8 +192,7 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
 
     @Override
     public Class getExecutorClassByMethod(Method method) {
-
-        return null;
+        return methodClassMap.get(method);
     }
 
 
