@@ -52,14 +52,13 @@ public class HttpHandler implements Callable {
                 FullHttpResponse fullHttpResponse;
                 RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
                 String httpMethod = requestMapping.method();
-                Object executor = httpClassContainer.getExecutorByMethod(method);
-                Class<?> executorClass = executor.getClass();
-                Constructor<?> declaredConstructor = executorClass.getDeclaredConstructor();
-                Object newInstance = declaredConstructor.newInstance();
-                BeanCopier beanCopier = BeanCopier.create(executor.getClass(), newInstance.getClass(), false);
-                beanCopier.copy(executor,newInstance,null);
+                Class executorClass = httpClassContainer.getExecutorClassByMethod(method);
+
+                Constructor declaredConstructor = executorClass.getDeclaredConstructor();
+                Object executor = declaredConstructor.newInstance();
+
                 try {
-                    Object response = HttpMethodInvoke.valueOf(httpMethod.toUpperCase()).invoke(uriSub, newInstance, method, fullHttpRequest, false);
+                    Object response = HttpMethodInvoke.valueOf(httpMethod.toUpperCase()).invoke(uriSub, executor, method, fullHttpRequest, false);
                     if (response instanceof FullHttpResponse) {
                         fullHttpResponse = (FullHttpResponse) response;
                     } else {
@@ -93,7 +92,8 @@ public class HttpHandler implements Callable {
                 FullHttpResponse fullHttpResponse=null;
                 RestRequestMapping restRequestMapping = restMethod.getAnnotation(RestRequestMapping.class);
                 String httpMethod = restRequestMapping.method();
-                Object executor = httpClassContainer.getRestExecutorByMethod(restMethod);
+                Class executorClass = httpClassContainer.getRestExecutorClassByMethod(restMethod);
+                Object executor = executorClass.newInstance();
                 try {
                     Object response = HttpMethodInvoke.valueOf(httpMethod.toUpperCase()).invoke(uriSub, executor, restMethod, fullHttpRequest, true);
                     if (response instanceof FullHttpResponse) {

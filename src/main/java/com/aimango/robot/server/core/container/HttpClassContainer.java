@@ -29,19 +29,14 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
     private Map<String,Method> uriMethodMap=new ConcurrentHashMap<>(128);
 
     /**
-     * 通过method获取对应的实例对象
+     * 通过method获取对应的class
      */
-    private Map<Method,Object> methodObjectMap=new ConcurrentHashMap<>(128);
+    private Map<Method,Class> methodClassMap=new ConcurrentHashMap<>(128);
 
     /**
      * 通过rest uri获取对应的method
      */
     private Map<String,Method> restUriMethodMap=new ConcurrentHashMap<>(128);
-
-    /**
-     * 通过rest method 获取其对应的实例对象
-     */
-    private Map<Method,Object> restMethodObjectMap=new ConcurrentHashMap<>(128);
 
     /**
      * 记录rest uri的路径参数的位置坐标
@@ -61,9 +56,9 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
     }
 
     private void init() throws Exception {
-        Map<Class, Object> targetMap = getTargetMap();
-        for (Map.Entry<Class,Object> entry:targetMap.entrySet()){
-            analyzeClassByAnnotation(entry);
+        Set<Class> classes = super.getClasses();
+        for (Class clazz:classes){
+            analyzeClassByAnnotation(clazz);
         }
         logger.info("容器构建完毕");
     }
@@ -71,9 +66,8 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
     /**
      * 分离出所有的Controller
      */
-    private void analyzeClassByAnnotation(Map.Entry<Class, Object> entry) throws IllegalAccessException, InstantiationException {
+    private void analyzeClassByAnnotation(Class clazz) throws IllegalAccessException, InstantiationException {
         boolean isWebConfiguration=false;
-        Class clazz = entry.getKey();
         Class[] interfaces = clazz.getInterfaces();
 
         for (Type type:interfaces){
@@ -86,24 +80,24 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
         }
 
         if (isWebConfiguration){
-            initInterceptors(entry);
+            initInterceptors(clazz);
             this.interceptor=true;
         }
         Annotation[] declaredAnnotations = clazz.getDeclaredAnnotations();
         List<Annotation> classAnnotations = Arrays.asList(declaredAnnotations);
         for (Annotation annotation:classAnnotations){
             if (annotation.annotationType()== Controller.class){
-                initHttpHandlerContainer(entry);
+                initHttpHandlerContainer(clazz);
             }
             if (annotation.annotationType()== RestController.class){
-                initRestHttpHandlerContainer(entry);
+                initRestHttpHandlerContainer(clazz);
             }
         }
     }
 
-    private void initInterceptors(Map.Entry<Class, Object> entry) throws IllegalAccessException, InstantiationException {
+    private void initInterceptors(Class clazz) throws IllegalAccessException, InstantiationException {
         InterceptorRegistry interceptorRegistry=new InterceptorRegistry();
-        WebConfiguration webConfigurationInstance = (WebConfiguration)entry.getValue();
+        WebConfiguration webConfigurationInstance = (WebConfiguration)clazz.newInstance();
         webConfigurationInstance.addInterceptors(interceptorRegistry);
         List<InterceptorRegistration> registrations = interceptorRegistry.getRegistrations();
         if (registrations.size()>0){
@@ -125,15 +119,14 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
         }
     }
 
-    private void initRestHttpHandlerContainer(Map.Entry<Class, Object> entry) throws InstantiationException, IllegalAccessException {
-        Class clazz = entry.getKey();
+    private void initRestHttpHandlerContainer(Class clazz) throws InstantiationException, IllegalAccessException {
         Method[] declaredMethods = clazz.getDeclaredMethods();
         for (Method method:declaredMethods){
-            restMethodHandler(method,entry);
+            restMethodHandler(method,clazz);
         }
     }
 
-    private void restMethodHandler(Method method, Map.Entry<Class, Object> entry) throws IllegalAccessException, InstantiationException {
+    private void restMethodHandler(Method method, Class methodHolder) throws IllegalAccessException, InstantiationException {
         boolean annotationPresent = method.isAnnotationPresent(RestRequestMapping.class);
         if (annotationPresent){
             RestRequestMapping annotation = method.getAnnotation(RestRequestMapping.class);
@@ -158,32 +151,29 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
             uriRegex=uriRegex.substring(0,uriRegex.length()-1);
             this.restUriPathParamIndexInfoMap.put(uriRegex,pathParamIndexMap);
             this.restUriMethodMap.put(uriRegex,method);
-            this.restMethodObjectMap.put(method,entry.getValue());
         }
     }
 
     /**
      * 处理所有的@Controller类
      */
-    private void initHttpHandlerContainer(Map.Entry<Class, Object> entry) throws InstantiationException, IllegalAccessException {
-        Class clazz = entry.getKey();
+    private void initHttpHandlerContainer(Class clazz) throws InstantiationException, IllegalAccessException {
         Method[] declaredMethods = clazz.getDeclaredMethods();
         for (Method method:declaredMethods){
-            methodHandler(method,entry.getValue());
+            methodHandler(method,clazz);
         }
     }
 
     /**
      * 处理Controller类的method
      */
-    private void methodHandler(Method method, Object executor) throws IllegalAccessException, InstantiationException {
+    private void methodHandler(Method method, Class methodHolder) throws IllegalAccessException, InstantiationException {
         boolean annotationPresent = method.isAnnotationPresent(RequestMapping.class);
         if (annotationPresent){
             RequestMapping annotation = method.getAnnotation(RequestMapping.class);
             String url = annotation.url();
             url = UriUtils.uri(url);
             this.uriMethodMap.put(url,method);
-            this.methodObjectMap.put(method,executor);
         }
     }
 
@@ -198,15 +188,12 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
         return null;
     }
 
-    /**
-     * 通过method 得到method 的类的实例
-     * @param method
-     * @return
-     */
-    public Object getExecutorByMethod(Method method) {
-        Object target = methodObjectMap.get(method);
-        return target;
+    @Override
+    public Class getExecutorClassByMethod(Method method) {
+
+        return null;
     }
+
 
     @Override
     public Method getRestMethodByUri(String uri) {
@@ -225,10 +212,11 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
     }
 
     @Override
-    public Object getRestExecutorByMethod(Method restMethod) {
-        Object o = restMethodObjectMap.get(restMethod);
-        return o;
+    public Class getRestExecutorClassByMethod(Method restMethod) {
+
+        return null;
     }
+
 
     @Override
     public Map<String, Integer> getRestUriPathParamIndexInfoMap(String uri) {

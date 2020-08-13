@@ -14,14 +14,13 @@ import com.alibaba.fastjson.JSON;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.*;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -50,7 +49,7 @@ public enum HttpMethodInvoke implements Invoker {
                         Object o = HttpMethodInvoke.restInnerInvoke(uri, executor, method, fullHttpRequest);
                         return o;
                     }
-                }catch (IllegalArgumentException i){
+                } catch (IllegalArgumentException i) {
                     return i.getMessage();
                 }
             } else {
@@ -75,7 +74,7 @@ public enum HttpMethodInvoke implements Invoker {
                         Object o = HttpMethodInvoke.restInnerInvoke(uri, executor, method, fullHttpRequest);
                         return o;
                     }
-                }catch (IllegalArgumentException i){
+                } catch (IllegalArgumentException i) {
                     return i.getMessage();
                 }
             } else {
@@ -92,11 +91,11 @@ public enum HttpMethodInvoke implements Invoker {
             Parameter parameter = parameters[i];
             boolean requestBody = parameter.isAnnotationPresent(RequestBody.class);
             if (requestBody) {
-                boolean isJson = fullHttpRequest.headers().contains(HttpHeaderNames.CONTENT_TYPE,HttpHeaderValues.APPLICATION_JSON,true);
-                if (isJson){
-                    Object o=jsonParamTransfer(parameter,fullHttpRequest);
+                boolean isJson = fullHttpRequest.headers().contains(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON, true);
+                if (isJson) {
+                    Object o = jsonParamTransfer(parameter, fullHttpRequest);
                     realParamValues[i] = o;
-                }else {
+                } else {
                     throw new IllegalArgumentException("非json格式请求参数!拒绝访问！");
                 }
             }
@@ -157,118 +156,119 @@ public enum HttpMethodInvoke implements Invoker {
             }
         }
         try {
-            methodPreInvoke(executor,executor);
+            methodPreInvoke(executor);
             Object response = method.invoke(executor, realParamValues);
-            methodAfterInvoke(executor,executor);
+            methodAfterInvoke(executor);
             return response;
-        } catch (Exception e){
-            methodExceptionInvoke(executor,executor);
+        } catch (Exception e) {
+            methodExceptionInvoke(executor);
             throw e;
         }
     }
 
-    private static Object cycleCheck(Object object,Field field) throws IllegalAccessException {
-        if (object==null){
-            throw new IllegalArgumentException("字段:"+field.getName()+"为空！");
+    private static Object cycleCheck(Object object, Field field) throws IllegalAccessException {
+        if (object == null) {
+            throw new IllegalArgumentException("字段:" + field.getName() + "为空！");
         }
         Class<?> clazz = field.getType();
         boolean annotationPresent = clazz.isAnnotationPresent(Validate.class);
-        if (annotationPresent){
+        if (annotationPresent) {
             Field[] declaredFields = clazz.getDeclaredFields();
-            for (Field declaredField:declaredFields){
+            for (Field declaredField : declaredFields) {
                 boolean accessible = declaredField.isAccessible();
-                if (!accessible){
+                if (!accessible) {
                     declaredField.setAccessible(true);
                 }
 
                 Annotation[] fieldAnnotations = declaredField.getDeclaredAnnotations();
-                for (Annotation annotation:fieldAnnotations){
+                for (Annotation annotation : fieldAnnotations) {
                     Class<? extends Annotation> annotationType = annotation.annotationType();
-                    if (annotationType.equals(Email.class)){
+                    if (annotationType.equals(Email.class)) {
                         String fieldString = String.valueOf(declaredField.get(object));
                         boolean email = Validator.isEmail(fieldString);
-                        if (!email){
-                            throw new IllegalArgumentException("字段："+declaredField.getName()+"邮箱格式错误！");
+                        if (!email) {
+                            throw new IllegalArgumentException("字段：" + declaredField.getName() + "邮箱格式错误！");
                         }
                     }
-                    if (annotationType.equals(Mobile.class)){
+                    if (annotationType.equals(Mobile.class)) {
                         String fieldString = String.valueOf(declaredField.get(object));
                         boolean mobile = Validator.isMobile(fieldString);
-                        if (!mobile){
-                            throw new IllegalArgumentException("字段："+declaredField.getName()+"手机格式错误！");
+                        if (!mobile) {
+                            throw new IllegalArgumentException("字段：" + declaredField.getName() + "手机格式错误！");
                         }
                     }
-                    if (annotationType.equals(NotEmpty.class)){
+                    if (annotationType.equals(NotEmpty.class)) {
                         String fieldString = String.valueOf(declaredField.get(object));
-                        if (!StrUtil.isNotEmpty(fieldString)||declaredField.get(object)==null){
-                            throw new IllegalArgumentException("字段："+declaredField.getName()+"值不能为空！");
+                        if (!StrUtil.isNotEmpty(fieldString) || declaredField.get(object) == null) {
+                            throw new IllegalArgumentException("字段：" + declaredField.getName() + "值不能为空！");
                         }
                     }
-                    if (annotationType.equals(NotNull.class)){
+                    if (annotationType.equals(NotNull.class)) {
                         Object fieldObj = declaredField.get(object);
                         Object o = declaredField.get(object);
-                        cycleCheck(o,declaredField);
-                        if (fieldObj==null){
-                            throw new IllegalArgumentException("字段："+declaredField.getName()+"不能为null！");
+                        cycleCheck(o, declaredField);
+                        if (fieldObj == null) {
+                            throw new IllegalArgumentException("字段：" + declaredField.getName() + "不能为null！");
                         }
                     }
                 }
 
             }
             return object;
-        }else {
+        } else {
             return object;
         }
     }
 
-    private static Object cycleCheck(Object object,Parameter parameter) throws IllegalAccessException {
+    private static Object cycleCheck(Object object, Parameter parameter) throws IllegalAccessException {
         Class<?> clazz = parameter.getType();
         boolean annotationPresent = clazz.isAnnotationPresent(Validate.class);
-        if (annotationPresent){
+        if (annotationPresent) {
             Field[] declaredFields = clazz.getDeclaredFields();
-            for (Field declaredField:declaredFields){
+            for (Field declaredField : declaredFields) {
                 boolean accessible = declaredField.isAccessible();
-                if (!accessible){
+                if (!accessible) {
                     declaredField.setAccessible(true);
                 }
                 Annotation[] fieldAnnotations = declaredField.getDeclaredAnnotations();
-                for (Annotation annotation:fieldAnnotations){
+                for (Annotation annotation : fieldAnnotations) {
                     Class<? extends Annotation> annotationType = annotation.annotationType();
-                    if (annotationType.equals(Email.class)){
+                    if (annotationType.equals(Email.class)) {
                         String fieldString = String.valueOf(declaredField.get(object));
                         boolean email = Validator.isEmail(fieldString);
-                        if (!email){
-                            throw new IllegalArgumentException("字段："+declaredField.getName()+"邮箱格式错误！");
+                        if (!email) {
+                            throw new IllegalArgumentException("字段：" + declaredField.getName() + "邮箱格式错误！");
                         }
                     }
-                    if (annotationType.equals(Mobile.class)){
+                    if (annotationType.equals(Mobile.class)) {
                         String fieldString = String.valueOf(declaredField.get(object));
                         boolean mobile = Validator.isMobile(fieldString);
-                        if (!mobile){
-                            throw new IllegalArgumentException("字段："+declaredField.getName()+"手机格式错误！");
+                        if (!mobile) {
+                            throw new IllegalArgumentException("字段：" + declaredField.getName() + "手机格式错误！");
                         }
                     }
-                    if (annotationType.equals(NotEmpty.class)){
+                    if (annotationType.equals(NotEmpty.class)) {
                         String fieldString = String.valueOf(declaredField.get(object));
-                        if (!StrUtil.isNotEmpty(fieldString)||declaredField.get(object)==null){
-                            throw new IllegalArgumentException("字段："+declaredField.getName()+"值不能为空！");
+                        if (!StrUtil.isNotEmpty(fieldString) || declaredField.get(object) == null) {
+                            throw new IllegalArgumentException("字段：" + declaredField.getName() + "值不能为空！");
                         }
                     }
-                    if (annotationType.equals(NotNull.class)){
+                    if (annotationType.equals(NotNull.class)) {
                         Object fieldObj = declaredField.get(object);
-                        if (fieldObj==null){
-                            throw new IllegalArgumentException("字段："+declaredField.getName()+"不能为null！");
+                        if (fieldObj == null) {
+                            throw new IllegalArgumentException("字段：" + declaredField.getName() + "不能为null！");
                         }
-                        cycleCheck(fieldObj,declaredField);
+                        cycleCheck(fieldObj, declaredField);
                     }
                 }
 
             }
             return object;
-        }else {
+        } else {
             return object;
         }
     }
+
     private static Object jsonParamTransfer(Parameter parameter, FullHttpRequest fullHttpRequest) throws IllegalArgumentException, IllegalAccessException {
         try {
             Class type = parameter.getType();
@@ -281,9 +281,9 @@ public enum HttpMethodInvoke implements Invoker {
                 throw new IllegalArgumentException("RequestBody is Empty!");
             }
             Object o = JSON.parseObject(s, type);
-            cycleCheck(o,parameter);
+            cycleCheck(o, parameter);
             return o;
-        }catch (IllegalAccessException e){
+        } catch (IllegalAccessException e) {
             throw e;
         }
     }
@@ -296,11 +296,11 @@ public enum HttpMethodInvoke implements Invoker {
             Parameter parameter = parameters[i];
             boolean requestBody = parameter.isAnnotationPresent(RequestBody.class);
             if (requestBody) {
-                boolean isJson = fullHttpRequest.headers().contains(HttpHeaderNames.CONTENT_TYPE,HttpHeaderValues.APPLICATION_JSON,true);
-                if (isJson){
-                    Object o=jsonParamTransfer(parameter,fullHttpRequest);
+                boolean isJson = fullHttpRequest.headers().contains(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON, true);
+                if (isJson) {
+                    Object o = jsonParamTransfer(parameter, fullHttpRequest);
                     realParams[i] = o;
-                }else {
+                } else {
                     throw new IllegalArgumentException("非json格式请求参数!拒绝访问！");
                 }
             }
@@ -337,121 +337,106 @@ public enum HttpMethodInvoke implements Invoker {
             }
         }
         try {
-            methodPreInvoke(executor,executor);
+            methodPreInvoke(executor);
             Object response = method.invoke(executor, realParams);
-            methodAfterInvoke(executor,executor);
+            methodAfterInvoke(executor);
             return response;
-        } catch (Exception e){
-            methodExceptionInvoke(executor,executor);
+        } catch (Exception e) {
+            methodExceptionInvoke(executor);
             throw e;
         }
     }
 
-    private static void methodPreInvoke(Object executor,Object sessionOpener) throws NoSuchFieldException, IllegalAccessException {
+    private static void executorAutowired(Object executor) throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, InstantiationException, InvocationTargetException {
         IocContainer iocContainer = (IocContainer) HttpServerLauncher.getContainer();
-        Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
-        List<Class> interfaces = objectClassListMap.get(executor);
-        if (interfaces!=null){
-            Iterator<Class> iterator = interfaces.iterator();
-            while (iterator.hasNext()) {
-                Class interfaceImpl = iterator.next();
-                boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
-                if (annotationPresent) {
-                    Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
-                    String value = repository.value();
-                    if ("mybatis".equals(value)) {
-                        Object mapper = Mybatis.getMapper(interfaceImpl,sessionOpener);
-
-                        Field[] declaredFields = executor.getClass().getDeclaredFields();
-                        for (Field field : declaredFields) {
-                            if (field.getType().equals(interfaceImpl)) {
-                                boolean accessible = field.isAccessible();
-                                if (!accessible) {
-                                    field.setAccessible(true);
-                                }
-                                field.set(executor, mapper);
-                            }
-                        }
-                    }
-                }
-                boolean serviceAnnotation = interfaceImpl.isAnnotationPresent(Service.class);
-                if (serviceAnnotation) {
-                    Map<Class, Class> instanceOfInterface = iocContainer.getInstanceOfInterface();
-                    Class clazz = instanceOfInterface.get(interfaceImpl);
-
-                    Object o = iocContainer.getTargetMap().get(clazz);
-                    methodPreInvoke(o,sessionOpener);
-                    Field[] declaredFields = executor.getClass().getDeclaredFields();
-                    for (Field field : declaredFields) {
-                        if (field.getType().equals(interfaceImpl)) {
-                            boolean accessible = field.isAccessible();
-                            if (!accessible) {
-                                field.setAccessible(true);
-                            }
-                            field.set(executor, o);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
+        Class executorClass = executor.getClass();
+        classAutowiredInstance(executorClass, iocContainer,executor ,executor);
     }
 
-    private static void methodAfterInvoke(Object executor,Object sessionOpener) {
-        IocContainer iocContainer = (IocContainer) HttpServerLauncher.getContainer();
-        Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
-        List<Class> interfaces = objectClassListMap.get(executor);
-        if (interfaces!=null){
-            Iterator<Class> iterator = interfaces.iterator();
-            while (iterator.hasNext()) {
-                Class interfaceImpl = iterator.next();
-                boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
+    /**
+     * 对class进行实例化填充
+     * @param clazz
+     * @param iocContainer
+     * @param o  被填充的对象
+     * @return 返回填充完之后的对象
+     * @throws NoSuchFieldException
+     * @throws IllegalAccessException
+     * @throws NoSuchMethodException
+     * @throws InvocationTargetException
+     * @throws InstantiationException
+     */
+    private static Object classAutowiredInstance(Class clazz, IocContainer iocContainer, Object o,Object executor) throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InstantiationException {
+        boolean anInterface = clazz.isInterface();
+        if (anInterface) {
+            Map<Class, Class> interfaceImplMap = iocContainer.getInterfaceImplMap();
+            Class interfaceImplClass = interfaceImplMap.get(clazz);
+            if (interfaceImplClass != null) {
+                Constructor declaredConstructor = interfaceImplClass.getDeclaredConstructor();
+                boolean accessible = declaredConstructor.isAccessible();
+                if (!accessible){
+                    declaredConstructor.setAccessible(true);
+                }
+                Object interfaceImplInstance = declaredConstructor.newInstance();
+                return classAutowiredInstance(interfaceImplClass, iocContainer, interfaceImplInstance,executor);
+            } else {
+                boolean annotationPresent = interfaceImplClass.isAnnotationPresent(Repository.class);
                 if (annotationPresent) {
-                    Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
+                    Repository repository = (Repository) interfaceImplClass.getDeclaredAnnotation(Repository.class);
                     String value = repository.value();
                     if ("mybatis".equals(value)) {
-                        Mybatis.commitAndCloseExecutorSqlSession(sessionOpener);
+                        Object mapper = Mybatis.getMapper(clazz, executor);
+                        return mapper;
+                    } else {
+                        return null;
                     }
+                } else {
+                    return null;
                 }
-                boolean serviceAnnotation = interfaceImpl.isAnnotationPresent(Service.class);
-                if (serviceAnnotation) {
-                    Map<Class, Class> instanceOfInterface = iocContainer.getInstanceOfInterface();
-                    Class clazz = instanceOfInterface.get(interfaceImpl);
+            }
+        } else {
+            Map<Class, Set<Class>> classRequiredClassesMap = iocContainer.getClassRequiredClassesMap();
+            Set<Class> classes = classRequiredClassesMap.get(clazz);
+            if (classes != null) {
+                Iterator<Class> iterator = classes.iterator();
+                while (iterator.hasNext()) {
+                    Class requiredClass = iterator.next();
+                    Field field = clazz.getField(requiredClass.getName());
+                    boolean accessible = field.isAccessible();
+                    if (!accessible) {
+                        field.setAccessible(true);
+                    }
+                    Constructor declaredConstructor = requiredClass.getDeclaredConstructor();
+                    boolean declaredConstructorAccessible = declaredConstructor.isAccessible();
+                    if (!declaredConstructorAccessible){
+                        declaredConstructor.setAccessible(true);
+                    }
+                    Object obj = declaredConstructor.newInstance();
 
-                    Object o = iocContainer.getTargetMap().get(clazz);
-                    methodAfterInvoke(o,sessionOpener);
+                    Object fieldInstance = classAutowiredInstance(requiredClass, iocContainer,obj, executor);
+                    field.set(o, fieldInstance);
                 }
+                return o;
+            } else {
+                Constructor declaredConstructor = clazz.getDeclaredConstructor();
+                boolean accessible = declaredConstructor.isAccessible();
+                if (!accessible) {
+                    declaredConstructor.setAccessible(true);
+                }
+                Object obj = declaredConstructor.newInstance();
+                return obj;
             }
         }
     }
 
-    private static void methodExceptionInvoke(Object executor,Object sessionOpener) {
-        IocContainer iocContainer = (IocContainer) HttpServerLauncher.getContainer();
-        Map<Object, List<Class>> objectClassListMap = iocContainer.getObjectClassListMap();
-        List<Class> interfaces = objectClassListMap.get(executor);
+    private static void methodPreInvoke(Object executor) throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InstantiationException {
+        executorAutowired(executor);
+    }
 
-        if (interfaces!=null){
-            Iterator<Class> iterator = interfaces.iterator();
-            while (iterator.hasNext()) {
-                Class interfaceImpl = iterator.next();
-                boolean annotationPresent = interfaceImpl.isAnnotationPresent(Repository.class);
-                if (annotationPresent) {
-                    Repository repository = (Repository) interfaceImpl.getDeclaredAnnotation(Repository.class);
-                    String value = repository.value();
-                    if ("mybatis".equals(value)) {
-                        Mybatis.callback(sessionOpener);
-                    }
-                }
-                boolean serviceAnnotation = interfaceImpl.isAnnotationPresent(Service.class);
-                if (serviceAnnotation) {
-                    Map<Class, Class> instanceOfInterface = iocContainer.getInstanceOfInterface();
-                    Class clazz = instanceOfInterface.get(interfaceImpl);
+    private static void methodAfterInvoke(Object executor) {
+        Mybatis.commitAndCloseExecutorSqlSession(executor);
+    }
 
-                    Object o = iocContainer.getTargetMap().get(clazz);
-                    methodExceptionInvoke(o,sessionOpener);
-                }
-            }
-        }
+    private static void methodExceptionInvoke(Object executor) {
+        Mybatis.callback(executor);
     }
 }

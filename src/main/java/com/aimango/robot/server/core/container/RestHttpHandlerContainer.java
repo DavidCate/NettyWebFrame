@@ -6,7 +6,7 @@ import java.util.Map;
 public interface RestHttpHandlerContainer extends HttpHandlerContainer {
     Method getRestMethodByUri(String uri);
 
-    Object getRestExecutorByMethod(Method restMethod);
+    Class getRestExecutorClassByMethod(Method restMethod);
 
     Map<String,Integer> getRestUriPathParamIndexInfoMap(String uri);
 }
