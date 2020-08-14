@@ -129,9 +129,50 @@ public abstract class IocContainer extends ClassContainer {
         interfaces.add(clazz);
     }
 
-    private void refresh() {
-
+    private void refresh() throws Exception {
+        logger.info("循环依赖检查");
+        Set<Map.Entry<Class, Set<Class>>> entries = classRequiredClassesMap.entrySet();
+        for (Map.Entry<Class, Set<Class>> entry:entries){
+            Class key = entry.getKey();
+            logger.info("检查class:"+key.getName()+"的依赖情况");
+            Set<Class> value = entry.getValue();
+            for (Class clazz:value){
+                logger.info("检查被依赖类:"+clazz.getName()+"的依赖情况");
+                Set<Class> classes = classRequiredClassesMap.get(clazz);
+                boolean validate = validate(classes, clazz);
+                if (!validate){
+                    throw new Exception("类："+key+"存着循环依赖请检查！");
+                }
+            }
+        }
     }
+
+    private boolean validate(Set<Class> classes,Class originClass){
+        if (classes!=null){
+            for (Class clazz:classes){
+                if (clazz.equals(originClass)){
+                    return false;
+                }else {
+                    Set<Class> classes1 = classRequiredClassesMap.get(clazz);
+                    if (classes1!=null){
+                        boolean validate = validate(classes1, originClass);
+                        return validate;
+                    }else {
+                        boolean equals = clazz.equals(originClass);
+                        if (equals){
+                            return false;
+                        }else {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return true;
+        }else {
+            return true;
+        }
+    }
+
 
     private void instance(Class clazz) {
         classes.add(clazz);

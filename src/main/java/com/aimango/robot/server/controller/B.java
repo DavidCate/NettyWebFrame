@@ -4,12 +4,7 @@ import com.aimango.robot.server.core.annotation.Autowired;
 import com.aimango.robot.server.core.annotation.Component;
 
 @Component
-public class A {
-    private String aaa="xxx";
+public class B {
     @Autowired
-    B b;
-
-    public String getAaa() {
-        return aaa;
-    }
+    A a;
 }

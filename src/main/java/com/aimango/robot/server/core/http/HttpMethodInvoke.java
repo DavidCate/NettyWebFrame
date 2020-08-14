@@ -91,7 +91,8 @@ public enum HttpMethodInvoke implements Invoker {
             Parameter parameter = parameters[i];
             boolean requestBody = parameter.isAnnotationPresent(RequestBody.class);
             if (requestBody) {
-                boolean isJson = fullHttpRequest.headers().contains(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON, true);
+                String contentType = fullHttpRequest.headers().get(HttpHeaderNames.CONTENT_TYPE);
+                boolean isJson = HttpUtils.ContentTypeJudge.isJson(contentType);
                 if (isJson) {
                     Object o = jsonParamTransfer(parameter, fullHttpRequest);
                     realParamValues[i] = o;
@@ -296,7 +297,8 @@ public enum HttpMethodInvoke implements Invoker {
             Parameter parameter = parameters[i];
             boolean requestBody = parameter.isAnnotationPresent(RequestBody.class);
             if (requestBody) {
-                boolean isJson = fullHttpRequest.headers().contains(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON, true);
+                String contentType = fullHttpRequest.headers().get(HttpHeaderNames.CONTENT_TYPE);
+                boolean isJson = HttpUtils.ContentTypeJudge.isJson(contentType);
                 if (isJson) {
                     Object o = jsonParamTransfer(parameter, fullHttpRequest);
                     realParams[i] = o;
