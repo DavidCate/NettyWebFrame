@@ -43,6 +43,9 @@ public class HttpHandler implements Callable {
         } else {
             uriSub = uri;
         }
+        if (uriSub.endsWith("/")){
+            uriSub=uriSub.substring(0,uriSub.length()-1);
+        }
 
         Method method = httpClassContainer.getMethodByUri(uriSub);
         if (method != null) {

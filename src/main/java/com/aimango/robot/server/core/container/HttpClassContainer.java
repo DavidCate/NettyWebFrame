@@ -214,8 +214,7 @@ public class HttpClassContainer extends IocContainer implements RestHttpHandlerC
 
     @Override
     public Class getRestExecutorClassByMethod(Method restMethod) {
-
-        return null;
+       return getExecutorClassByMethod(restMethod);
     }
 
 
